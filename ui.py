@@ -37,8 +37,24 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             layout.label(text='Projector Settings:')
             box = layout.box()
+
             box.prop(proj_settings, 'throw_ratio')
             box.prop(proj_settings, 'power', text='Power')
+
+            # Lens Shift
+            col = box.column(align=True)
+            col.prop(proj_settings, 'o_shift', text='Vertical Offset')
+            col.prop(proj_settings, 'v_shift', text='Vertical Shift')
+            col.prop(proj_settings, 'h_shift', text='Horizontal Shift')
+
+            box.prop(data=proj_settings, property='f_distance', text='Focus Distance',slider=True)
+
+            #pro = col.split(factor=0.0, align=True)
+            pro = box.column(align=True)
+            pro.prop(data=proj_settings, property='w_projection', text='width',slider=True)
+            pro.prop(proj_settings, 'h_projection', text='height',slider=True)
+            pro.prop(proj_settings, 'd_projection', text='diagonal',slider=True)
+
             res_row = box.row()
             res_row.prop(proj_settings, 'resolution',
                          text='Resolution', icon='PRESET')
@@ -48,13 +64,10 @@ class PROJECTOR_PT_projector_settings(Panel):
             else:
                 res_row.active = True
                 res_row.enabled = True
-            # Lens Shift
-            col = box.column(align=True)
-            col.prop(proj_settings,
-                     'h_shift', text='Horizontal Shift')
-            col.prop(proj_settings, 'v_shift', text='Vertical Shift')
             layout.prop(proj_settings,
                         'projected_texture', text='Project')
+            # Projecton Size
+
             # Pixel Grid
             box.prop(proj_settings, 'show_pixel_grid')
 

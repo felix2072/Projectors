@@ -30,14 +30,15 @@ RESOLUTIONS = [
     ('1920x1080', '1080p (1920x1080) 16:9', '', 5),
     ('3840x2160', '4K Ultra HD (3840x2160) 16:9', '', 6),
     # 4:3 aspect ratio
-    ('800x600', 'SVGA (800x600) 4:3', '', 7),
-    ('1024x768', 'XGA (1024x768) 4:3', '', 8),
-    ('1400x1050', 'SXGA+ (1400x1050) 4:3', '', 9),
-    ('1600x1200', 'UXGA (1600x1200) 4:3', '', 10),
+    ('768x576', 'PAL-D (768x576) 4:3', '', 7),
+    ('800x600', 'SVGA (800x600) 4:3', '', 8),
+    ('1024x768', 'XGA (1024x768) 4:3', '', 9),
+    ('1400x1050', 'SXGA+ (1400x1050) 4:3', '', 10),
+    ('1600x1200', 'UXGA (1600x1200) 4:3', '', 11),
     # 17:9 aspect ratio
-    ('4096x2160', 'Native 4K (4096x2160) 17:9', '', 11),
+    ('4096x2160', 'Native 4K (4096x2160) 17:9', '', 12),
     # 1:1 aspect ratio
-    ('1000x1000', 'Square (1000x1000) 1:1', '', 12)
+    ('1000x1000', 'Square (1000x1000) 1:1', '', 13)
 ]
 
 PROJECTED_OUTPUTS = [(Textures.CHECKER.value, 'Checker', '', 1),
@@ -260,12 +261,9 @@ def update_throw_ratio(proj_settings, context):
     projector = get_projector(context)
     # Update properties of the camera.
     throw_ratio = proj_settings.get('throw_ratio')
-    distance = 1
-    alpha = math.atan((distance/throw_ratio)*.5) * 2
-    projector.data.lens_unit = 'FOV'
-    projector.data.angle = alpha
-    projector.data.sensor_width = 10
-    projector.data.display_size = 1
+    f_distace = proj_settings.get('f_distance')
+    projector.data.lens = 10*throw_ratio
+    projector.data.display_size = 1.0/throw_ratio*f_distace
 
     # Adjust Texture to fit new camera ###
     w, h = get_resolution(proj_settings, context)
@@ -286,6 +284,11 @@ def update_throw_ratio(proj_settings, context):
         nodes['Mapping.001'].inputs[3].default_value[1] = 1 / \
             throw_ratio * inverted_aspect_ratio
 
+def update_focus_distance(proj_settings, context):
+    projector = get_projector(context)
+    throw_ratio = proj_settings.get('throw_ratio')
+    f_distace = proj_settings.get('f_distance')
+    projector.data.display_size = 1/throw_ratio*f_distace
 
 def update_lens_shift(proj_settings, context):
     """
@@ -311,6 +314,14 @@ def update_lens_shift(proj_settings, context):
         nodes['Mapping.001'].inputs[1].default_value[0] = h_shift / throw_ratio
         nodes['Mapping.001'].inputs[1].default_value[1] = v_shift / throw_ratio
 
+def update_projection_dimension(proj_settings, context):
+    projector = get_projector(context)
+    w_projection = proj_settings.get('w_projection', 0.0)
+    h_projection = proj_settings.get('h_projection', 0.0)
+    d_projection = proj_settings.get('d_projection', 0.0)
+
+def update_projector_size(proj_settings, context):
+    projector = get_projector(context)
 
 def update_resolution(proj_settings, context):
     projector = get_projector(context)
@@ -466,7 +477,7 @@ def create_projector(context):
     # ### Spot Light ###
     bpy.ops.object.light_add(type='SPOT', location=(0, 0, 0))
     spot = context.object
-    spot.name = 'Projector.Spot'
+    spot.name = 'Projector.Spotlight'
     spot.scale = (.01, .01, .01)
     spot.data.spot_size = math.pi
     spot.data.spot_blend = 0
@@ -482,6 +493,10 @@ def create_projector(context):
                               rotation=(0, 0, 0))
     cam = context.object
     cam.name = 'Projector'
+    cam.data.lens_unit = 'MILLIMETERS'
+    cam.data.sensor_width = 10
+    cam.data.display_size = 1
+
 
     # Parent light to cam.
     spot.parent = cam
@@ -489,16 +504,22 @@ def create_projector(context):
     # Move newly create projector (cam and spotlight) to 3D-Cursor position.
     cam.location = context.scene.cursor.location
     cam.rotation_euler = context.scene.cursor.rotation_euler
+    
+    objects = bpy.data.objects
+    basic_cube = objects['Cube']
+    basic_cube.parent = cam
     return cam
 
 
 def init_projector(proj_settings, context):
     # # Add custom properties to store projector settings on the camera obj.
-    proj_settings.throw_ratio = 0.8
+    proj_settings.throw_ratio = 1
     proj_settings.power = 1000.0
-    proj_settings.projected_texture = Textures.CHECKER.value
-    proj_settings.h_shift = 0.0
+    proj_settings.o_shift = 0.0
     proj_settings.v_shift = 0.0
+    proj_settings.h_shift = 0.0
+    proj_settings.f_distance = 1
+    proj_settings.projected_texture = Textures.CHECKER.value
     proj_settings.projected_color = random_color()
     proj_settings.resolution = '1920x1080'
     proj_settings.use_custom_texture_res = True
@@ -573,44 +594,87 @@ class PROJECTOR_OT_delete_projector(Operator):
 class ProjectorSettings(bpy.types.PropertyGroup):
     throw_ratio: bpy.props.FloatProperty(
         name="Throw Ratio",
-        soft_min=0.4, soft_max=3,
+        soft_min=0.1, soft_max=5,
         update=update_throw_ratio,
         subtype='FACTOR')
+
     power: bpy.props.FloatProperty(
         name="Projector Power",
         soft_min=0, soft_max=999999,
         update=update_power,
         unit='POWER')
+
+    o_shift: bpy.props.FloatProperty(
+        name="Vertical Offset",
+        description="Vertical Lens Offset",
+        soft_min=-100, soft_max=100,
+        update=update_lens_shift,
+        subtype='PERCENTAGE')
+
+    v_shift: bpy.props.FloatProperty(
+        name="Vertical Shift",
+        description="Vertical Lens Shift",
+        soft_min=-100, soft_max=100,
+        update=update_lens_shift,
+        subtype='PERCENTAGE')
+
+    h_shift: bpy.props.FloatProperty(
+        name="Horizontal Shift",
+        description="Horizontal Lens Shift",
+        soft_min=-100, soft_max=100,
+        update=update_lens_shift,
+        subtype='PERCENTAGE')
+
+    f_distance: bpy.props.FloatProperty(
+        name="Focus Distance",
+        description="Set the focus distance in meter",
+        soft_min=0.01, soft_max=30,
+        update=update_focus_distance,
+        subtype='DISTANCE')
+
+    w_projection: bpy.props.FloatProperty(
+        name="Projection Width",
+        description="Get the projection width",
+        soft_min=0, soft_max=10,
+        update=update_projection_dimension,
+        subtype='DISTANCE')
+
+    h_projection: bpy.props.FloatProperty(
+        name="Projection Height",
+        description="Get the projection height",
+        soft_min=0, soft_max=10,
+        update=update_projection_dimension,
+        subtype='DISTANCE')
+
+    d_projection: bpy.props.FloatProperty(
+        name="Projection Diagonal",
+        description="Get the projection diagonal",
+        soft_min=0, soft_max=10,
+        update=update_projection_dimension,
+        subtype='DISTANCE')
+
     resolution: bpy.props.EnumProperty(
         items=RESOLUTIONS,
         default='1920x1080',
         description="Select a Resolution for your Projector",
         update=update_resolution)
+
     use_custom_texture_res: bpy.props.BoolProperty(
         name="Let Image Define Projector Resolution",
         default=True,
         description="Use the resolution from the image as the projector resolution. Warning: After selecting a new image toggle this checkbox to update",
         update=update_throw_ratio)
-    h_shift: bpy.props.FloatProperty(
-        name="Horizontal Shift",
-        description="Horizontal Lens Shift",
-        soft_min=-20, soft_max=20,
-        update=update_lens_shift,
-        subtype='PERCENTAGE')
-    v_shift: bpy.props.FloatProperty(
-        name="Vertical Shift",
-        description="Vertical Lens Shift",
-        soft_min=-20, soft_max=20,
-        update=update_lens_shift,
-        subtype='PERCENTAGE')
+
     projected_color: bpy.props.FloatVectorProperty(
         subtype='COLOR',
         update=update_checker_color)
+
     projected_texture: bpy.props.EnumProperty(
         items=PROJECTED_OUTPUTS,
         default=Textures.CHECKER.value,
         description="What do you to project?",
         update=update_throw_ratio)
+
     show_pixel_grid: bpy.props.BoolProperty(
         name="Show Pixel Grid",
         description="When checked the image is divided into a pixel grid with the dimensions of the image resolution.",

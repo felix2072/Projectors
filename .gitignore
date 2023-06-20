@@ -4,3 +4,4 @@ builds/
 .vscode/
 *.zip
 prototypes/
+/.idea/
