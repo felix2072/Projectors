@@ -1,13 +1,15 @@
 import logging
 import math
 import os
+import random
 
 from enum import Enum
 import bpy
+from bpy import context, data, ops
 from bpy.types import Operator
 
 from .helper import (ADDON_ID, auto_offset,
-                     get_projectors, get_projector, random_color)
+                     get_projectors, get_projector, get_child_ID_by_name, get_child_ID_by_type, random_color)
 
 logging.basicConfig(
     format='[Projectors Addon]: %(name)s - %(levelname)s - %(message)s')
@@ -241,7 +243,7 @@ def get_resolution(proj_settings, context):
     """
     if proj_settings.use_custom_texture_res and proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value:
         projector = get_projector(context)
-        root_tree = projector.children[0].data.node_tree
+        root_tree = projector.children[get_child_ID_by_type(projector.children,'LIGHT')].data.node_tree
         image = root_tree.nodes['Image Texture'].image
         if image:
             w = image.size[0]
@@ -260,10 +262,10 @@ def update_throw_ratio(proj_settings, context):
     """
     projector = get_projector(context)
     # Update properties of the camera.
-    throw_ratio = proj_settings.get('throw_ratio')
-    f_distace = proj_settings.get('f_distance')
+    throw_ratio = proj_settings.throw_ratio
+    focus_distance = proj_settings.focus_distance
     projector.data.lens = 10*throw_ratio
-    projector.data.display_size = 1.0/throw_ratio*f_distace
+    projector.data.display_size = 1.0/throw_ratio*focus_distance
 
     # Adjust Texture to fit new camera ###
     w, h = get_resolution(proj_settings, context)
@@ -274,7 +276,7 @@ def update_throw_ratio(proj_settings, context):
     update_projected_texture(proj_settings, context)
 
     # Update spotlight properties.
-    spot = projector.children[0]
+    spot = projector.children[get_child_ID_by_type(projector.children,'LIGHT')]
     nodes = spot.data.node_tree.nodes['Group'].node_tree.nodes
     if bpy.app.version < (2, 81):
         nodes['Mapping.001'].scale[0] = 1 / throw_ratio
@@ -283,12 +285,14 @@ def update_throw_ratio(proj_settings, context):
         nodes['Mapping.001'].inputs[3].default_value[0] = 1 / throw_ratio
         nodes['Mapping.001'].inputs[3].default_value[1] = 1 / \
             throw_ratio * inverted_aspect_ratio
+    update_projection_helper(proj_settings, context)
 
 def update_focus_distance(proj_settings, context):
     projector = get_projector(context)
-    throw_ratio = proj_settings.get('throw_ratio')
-    f_distace = proj_settings.get('f_distance')
-    projector.data.display_size = 1/throw_ratio*f_distace
+    throw_ratio = proj_settings.throw_ratio
+    focus_distance = proj_settings.focus_distance
+    projector.data.display_size = 1/throw_ratio*focus_distance
+    update_projection_helper(proj_settings, context)
 
 def update_lens_shift(proj_settings, context):
     """
@@ -305,7 +309,7 @@ def update_lens_shift(proj_settings, context):
     cam.data.shift_y = v_shift
 
     # Update spotlight node setup.
-    spot = projector.children[0]
+    spot = projector.children[get_child_ID_by_type(projector.children,'LIGHT')]
     nodes = spot.data.node_tree.nodes['Group'].node_tree.nodes
     if bpy.app.version < (2, 81):
         nodes['Mapping.001'].translation[0] = h_shift / throw_ratio
@@ -325,30 +329,35 @@ def update_projector_size(proj_settings, context):
 
 def update_resolution(proj_settings, context):
     projector = get_projector(context)
-    nodes = projector.children[0].data.node_tree.nodes['Group'].node_tree.nodes
+    nodes = projector.children[get_child_ID_by_type(projector.children,'LIGHT')].data.node_tree.nodes['Group'].node_tree.nodes
     # Change resolution image texture
     nodes['Image Texture'].image = bpy.data.images[f'_proj.tex.{proj_settings.resolution}']
     update_throw_ratio(proj_settings, context)
     update_pixel_grid(proj_settings, context)
+    update_projection_helper(proj_settings, context)
 
 
 def update_checker_color(proj_settings, context):
     # Update checker texture color
+    projector = get_projector(context)
     nodes = get_projector(
-        context).children[0].data.node_tree.nodes['Group'].node_tree.nodes
+        context).children[get_child_ID_by_type(projector.children,'LIGHT')].data.node_tree.nodes['Group'].node_tree.nodes
     c = proj_settings.projected_color
     nodes['Checker Texture'].inputs['Color2'].default_value = [c.r, c.g, c.b, 1]
 
 
 def update_power(proj_settings, context):
     # Update spotlight power
-    spot = get_projector(context).children[0]
+    projector = get_projector(context)
+    spot = get_projector(context).children[get_child_ID_by_type(projector.children,'LIGHT')]
     spot.data.energy = proj_settings["power"]
 
 
 def update_pixel_grid(proj_settings, context):
     """ Update the pixel grid. Meaning, make it visible by linking the right node and updating the resolution. """
-    root_tree = get_projector(context).children[0].data.node_tree
+    
+    projector = get_projector(context)
+    root_tree = get_projector(context).children[get_child_ID_by_type(projector.children,'LIGHT')].data.node_tree
     nodes = root_tree.nodes
     pixel_grid_nodes = nodes['pixel_grid'].node_tree.nodes
     width, height = get_resolution(proj_settings, context)
@@ -359,6 +368,50 @@ def update_pixel_grid(proj_settings, context):
     else:
         root_tree.links.new(nodes['Emission'].outputs[0], nodes['Light Output'].inputs[0])
 
+def update_projection_helper(proj_settings, context):
+    
+    projector = get_projector(context)
+    curve = projector.children[get_child_ID_by_name(projector.children,'Projector.Plane')]
+
+    # todo: set transformation back to zero
+    """ curve.delta_location((0.0, 0.0, 0.0))
+    curve.delta_rotation_euler((0.0, 0.0, 0.0), 'XYZ') """
+
+    pn = curve.data.splines[0].points
+    """ end_point_idx = (len(obj.data.splines[0].points) - 1)
+    pn[end_point_idx].select = True """
+
+    throw_ratio = proj_settings.throw_ratio
+    focus_distance = proj_settings.focus_distance
+    resolution = proj_settings.resolution
+    cut = resolution.index('x')
+    w = float(proj_settings.resolution[0:cut])
+    h = float(proj_settings.resolution[cut+1:])
+    factor = focus_distance*1/throw_ratio/2
+
+    pn[0].co.x = -factor
+    pn[0].co.y = h/w*factor
+    pn[0].co.z = -focus_distance
+
+    pn[1].co.x = factor
+    pn[1].co.y = h/w*factor
+    pn[1].co.z = -focus_distance
+
+    pn[2].co.x = factor
+    pn[2].co.y = -(h/w*factor)
+    pn[2].co.z = -focus_distance
+
+    pn[3].co.x = -factor
+    pn[3].co.y = -(h/w*factor)
+    pn[3].co.z = -focus_distance
+
+    pn[4].co.x = -factor
+    pn[4].co.y = h/w*factor
+    pn[4].co.z = -focus_distance
+
+    proj_settings.w_projection = (pn[0].co - pn[1].co).length
+    proj_settings.h_projection = (pn[1].co - pn[2].co).length
+    proj_settings.d_projection = (pn[0].co - pn[2].co).length
     
 def create_pixel_grid_node_group():
     node_group = bpy.data.node_groups.new(
@@ -497,7 +550,6 @@ def create_projector(context):
     cam.data.sensor_width = 10
     cam.data.display_size = 1
 
-
     # Parent light to cam.
     spot.parent = cam
 
@@ -505,20 +557,96 @@ def create_projector(context):
     cam.location = context.scene.cursor.location
     cam.rotation_euler = context.scene.cursor.rotation_euler
     
-    objects = bpy.data.objects
+    bpy.ops.curve.primitive_nurbs_path_add(radius=1, enter_editmode=False)
+    obj = bpy.context.object
+    obj.name = "Projector.Plane"
+
+    # De-select all points
+    for pn in obj.data.splines[0].points:
+        pn.select = False
+
+    # Select the last point
+    pn = obj.data.splines[0].points
+    """ end_point_idx = (len(obj.data.splines[0].points) - 1)
+    pn[end_point_idx].select = True """
+
+    pn[0].co.x = -1.0
+    pn[0].co.y = 1.0
+    pn[1].co.x = 1.0
+    pn[1].co.y = 1.0
+    pn[2].co.x = 1.0
+    pn[2].co.y = -1.0
+    pn[3].co.x = -1.0
+    pn[3].co.y = -1.0
+    pn[4].co.x = -1.0
+    pn[4].co.y = 1.0
+
+    obj = bpy.context.object
+
+    # how to delete points
+    """splines     = obj.data.splines
+    bpy.ops.object.mode_set(mode = 'EDIT')
+    bpy.ops.curve.select_all(action='DESELECT')
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+
+    line0       = splines[0]
+    pt          = line0.points[4]
+    pt.select   = True 
+    bpy.ops.object.mode_set(mode = 'EDIT')
+    bpy.ops.curve.delete(type='VERT')"""
+
+
+    bpy.ops.object.mode_set(mode = 'EDIT')
+    bpy.ops.curve.select_all(action='SELECT')
+    bpy.ops.curve.handle_type_set(type='VECTOR')
+    bpy.ops.curve.spline_type_set(type='POLY')
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+
+
+
+    """ bpy.ops.curve.extrude_move(CURVE_OT_extrude={"mode":'TRANSLATION'},
+    TRANSFORM_OT_translate={"value":(0, 2, 0)}) """
+
+    """ objects = bpy.data.objects
     basic_cube = objects['Cube']
-    basic_cube.parent = cam
+    basic_cube.parent = cam """
+    # Create a bezier circle and enter edit mode.
+    """ ops.curve.primitive_bezier_circle_add(radius=1.0,
+                                        location=(0.0, 0.0, 0.0),
+                                        enter_editmode=True)
+    
+    
+    #cut
+    #ops.curve.subdivide(number_cuts=1)
+    
+    ops.transform.vertex_random(offset=1.0, uniform=0.1, normal=0.0, seed=0)
+
+    # Scale the curve while in edit mode.
+    ops.transform.resize(value=(2.0, 2.0, 3.0))
+
+    # Return to object mode.
+    ops.object.mode_set(mode='OBJECT')  """
+
+    # Paren Curve to Cam
+    curves = context.object
+    curves.parent = cam
+
+    bpy.context.view_layer.objects.active = cam
+    
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.data.objects["Projector"].select_set(True)
+    cam = context.object
     return cam
 
 
 def init_projector(proj_settings, context):
     # # Add custom properties to store projector settings on the camera obj.
-    proj_settings.throw_ratio = 1
+    proj_settings.throw_ratio = 1.0
     proj_settings.power = 1000.0
     proj_settings.o_shift = 0.0
     proj_settings.v_shift = 0.0
     proj_settings.h_shift = 0.0
-    proj_settings.f_distance = 1
+    proj_settings.focus_distance = 1.0
     proj_settings.projected_texture = Textures.CHECKER.value
     proj_settings.projected_color = random_color()
     proj_settings.resolution = '1920x1080'
@@ -532,6 +660,7 @@ def init_projector(proj_settings, context):
     update_lens_shift(proj_settings, context)
     update_power(proj_settings, context)
     update_pixel_grid(proj_settings, context)
+    update_projection_helper(proj_settings, context)
 
 
 class PROJECTOR_OT_create_projector(Operator):
@@ -549,7 +678,7 @@ class PROJECTOR_OT_create_projector(Operator):
 def update_projected_texture(proj_settings, context):
     """ Update the projected output source. """
     projector = get_projectors(context, only_selected=True)[0]
-    root_tree = projector.children[0].data.node_tree
+    root_tree = projector.children[get_child_ID_by_type(projector.children,'LIGHT')].data.node_tree
     group_tree = root_tree.nodes['Group'].node_tree
     group_output_node = group_tree.nodes['Group Output']
     group_node = root_tree.nodes['Group']
@@ -625,7 +754,7 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         update=update_lens_shift,
         subtype='PERCENTAGE')
 
-    f_distance: bpy.props.FloatProperty(
+    focus_distance: bpy.props.FloatProperty(
         name="Focus Distance",
         description="Set the focus distance in meter",
         soft_min=0.01, soft_max=30,
