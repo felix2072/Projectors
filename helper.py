@@ -44,6 +44,28 @@ def get_projector(context):
         return None
 
 
+def get_child_ID_by_type(children,name):
+    index = 0
+    for child in children:
+        if child.type != name:
+            index += 1
+            continue
+        else:
+            break
+    return index
+
+
+def get_child_ID_by_name(children,name):
+    index = 0
+    for child in children:
+        if child.name != name:
+            index += 1
+            continue
+        else:
+            break
+    return index
+
+
 def auto_offset():
     offset = 0
 

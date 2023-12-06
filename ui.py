@@ -1,4 +1,4 @@
-from .helper import get_projectors
+from .helper import get_projectors, get_child_ID_by_type, get_child_ID_by_name
 from .projector import RESOLUTIONS, Textures
 
 import bpy
@@ -47,7 +47,7 @@ class PROJECTOR_PT_projector_settings(Panel):
             col.prop(proj_settings, 'v_shift', text='Vertical Shift')
             col.prop(proj_settings, 'h_shift', text='Horizontal Shift')
 
-            box.prop(data=proj_settings, property='f_distance', text='Focus Distance',slider=True)
+            box.prop(data=proj_settings, property='focus_distance', text='Focus Distance',slider=True)
 
             #pro = col.split(factor=0.0, align=True)
             pro = box.column(align=True)
@@ -75,8 +75,7 @@ class PROJECTOR_PT_projector_settings(Panel):
             if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value:
                 box = layout.box()
                 box.prop(proj_settings, 'use_custom_texture_res')
-                node = get_projectors(context, only_selected=True)[
-                    0].children[0].data.node_tree.nodes['Image Texture']
+                node = get_projectors(context, only_selected=True)[0].children[get_child_ID_by_type(projector.children,'LIGHT')].data.node_tree.nodes['Image Texture']
                 box.template_image(node, 'image', node.image_user, compact=False)
 
 
