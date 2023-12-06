@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.autoComplete.extraPaths": [
+			"C:\\Users\\Felix\\AppData\\Local\\Programs\\Python\\Python38\\Lib\\site-packages\\fake_bpy_module_latest-20230620.dist-info"
+		],
+		"python.analysis.extraPaths": [
+			"C:\\Users\\Felix\\AppData\\Local\\Programs\\Python\\Python38\\Lib\\site-packages\\fake_bpy_module_latest-20230620.dist-info"
+		]
+	}
+}
