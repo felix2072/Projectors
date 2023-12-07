@@ -49,10 +49,15 @@ class PROJECTOR_PT_projector_settings(Panel):
             box.prop(data=proj_settings, property='focus_distance', text='Focus Distance',slider=True)
 
             #pro = col.split(factor=0.0, align=True)
-            pro = box.column(align=True)
-            pro.prop(proj_settings, 'w_projection', text='width',slider=True)
-            pro.prop(proj_settings, 'h_projection', text='height',slider=True)
-            pro.prop(proj_settings, 'd_projection', text='diagonal',slider=True)
+            img_size = box.column(align=True, heading='Image')
+            img_size.prop(proj_settings, 'w_projection', text='Image Width',slider=True)
+            img_size.prop(proj_settings, 'h_projection', text='Image Height',slider=True)
+            img_size.prop(proj_settings, 'd_projection', text='Image Diagonal',slider=True)
+            
+            p_size = box.column(align=True, heading='Projector')
+            p_size.prop(proj_settings, 'projector_w', text='Projector Width',slider=True)
+            p_size.prop(proj_settings, 'projector_h', text='Projector Height',slider=True)
+            p_size.prop(proj_settings, 'projector_d', text='Projector Depth',slider=True)
 
             res_row = box.row()
             res_row.prop(proj_settings, 'resolution',

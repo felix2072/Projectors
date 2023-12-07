@@ -322,11 +322,9 @@ def update_lens_shift(proj_settings, context):
     nodes = spot.data.node_tree.nodes['Group'].node_tree.nodes
     if bpy.app.version < (2, 81):
         nodes['Mapping.001'].translation[0] = h_shift / throw_ratio
-        #nodes['Mapping.001'].translation[1] = v_shift / throw_ratio
         nodes['Mapping.001'].translation[1] = v_shift_factor / throw_ratio
     else:
         nodes['Mapping.001'].inputs[1].default_value[0] = h_shift / throw_ratio
-        #nodes['Mapping.001'].inputs[1].default_value[1] = v_shift / throw_ratio
         nodes['Mapping.001'].inputs[1].default_value[1] = v_shift_factor / throw_ratio
     update_projection_helper(proj_settings, context)
 
@@ -344,6 +342,22 @@ def update_projection_by_diagonal(proj_settings, context):
     d_projection = proj_settings.d_projection
     #proj_settings.throw_ratio = d_projection*0.1
     #update_throw_ratio(proj_settings, context)
+
+def update_projector_width(proj_settings, context):
+    projector = get_projector(context)
+    projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
+    projector_cube.dimensions[0] = proj_settings.projector_w*0.01
+
+def update_projector_height(proj_settings, context):
+    projector = get_projector(context)
+    projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
+    projector_cube.dimensions[1] = proj_settings.projector_h*0.01
+
+def update_projector_depth(proj_settings, context):
+    projector = get_projector(context)
+    projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
+    projector_cube.dimensions[2] = proj_settings.projector_d*0.01
+    projector_cube.location[2] = projector_cube.dimensions[2]/2
 
 def update_resolution(proj_settings, context):
     projector = get_projector(context)
@@ -432,6 +446,20 @@ def update_projection_helper(proj_settings, context):
     pn[4].co.x = pn[0].co.x
     pn[4].co.y = pn[0].co.y
     pn[4].co.z = pn[0].co.z
+
+    pn[5].co = ((0.0,0.0,0.0,0.0))
+    pn[6].co = ((pn[1].co.x,pn[1].co.y,pn[1].co.z,0.0))
+    pn[7].co = ((0.0,0.0,0.0,0.0))
+    pn[8].co = ((pn[2].co.x,pn[2].co.y,pn[2].co.z,0.0))
+    pn[9].co = ((0.0,0.0,0.0,0.0))
+    pn[10].co = ((pn[3].co.x,pn[3].co.y,pn[3].co.z,0.0))
+    pn[11].co = ((0.0,0.0,0.0,0.0))
+    pn[12].co = ((0.0,0.0,0.0,0.0))
+    pn[13].co = ((0.0,0.0,0.0,0.0))
+    pn[14].co = ((0.0,0.0,0.0,0.0))
+    pn[15].co = ((0.0,0.0,0.0,0.0))
+    pn[16].co = ((0.0,0.0,0.0,0.0))
+    
 
     proj_settings.w_projection = (pn[0].co - pn[1].co).length
     proj_settings.h_projection = (pn[1].co - pn[2].co).length
@@ -574,7 +602,7 @@ def create_projector(context):
                               location=(0, 0, 0),
                               rotation=(0, 0, 0))
     cam = context.object
-    cam.name = 'Projector'
+    cam.name = 'Projector.001'
     cam.data.lens_unit = 'MILLIMETERS'
     cam.data.sensor_width = 10
     cam.data.display_size = 0.01
@@ -586,10 +614,12 @@ def create_projector(context):
 
     # Move newly create projector (cam and spotlight) to 3D-Cursor position.
     cam.location = context.scene.cursor.location
-    cam.rotation_euler = context.scene.cursor.rotation_euler
-    
-    bpy.ops.curve.primitive_nurbs_path_add(radius=1, enter_editmode=False)
+    #cam.rotation_euler = context.scene.cursor.rotation_euler
+    cam.rotation_euler = rotation=(math.pi*0.5, 0, 0)
+
+    bpy.ops.curve.primitive_nurbs_path_add(radius=1, enter_editmode=True)
     obj = bpy.context.object
+
     obj.name = "Projector_Plane.001"
 
     # De-select all points
@@ -629,6 +659,8 @@ def create_projector(context):
 
     bpy.ops.object.mode_set(mode = 'EDIT')
     bpy.ops.curve.select_all(action='SELECT')
+    bpy.ops.curve.subdivide()
+    bpy.ops.curve.subdivide()
     bpy.ops.curve.handle_type_set(type='VECTOR')
     bpy.ops.curve.spline_type_set(type='POLY')
     bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -662,10 +694,17 @@ def create_projector(context):
     curves = context.object
     curves.parent = cam
 
+    bpy.ops.mesh.primitive_cube_add(enter_editmode=False,align='WORLD',location=(0,0,0),scale=(1,1,1))
+    projector_cube = bpy.context.object
+    projector_cube.name = 'Projector_Cube.001'
+    projector_cube.dimensions = (1,1,1)
+    projector_cube.visible_shadow = False
+    projector_cube.parent = cam
+
     bpy.context.view_layer.objects.active = cam
     
     bpy.ops.object.select_all(action='DESELECT')
-    bpy.data.objects["Projector"].select_set(True)
+    bpy.data.objects["Projector.001"].select_set(True)
     cam = context.object
     return cam
 
@@ -677,6 +716,9 @@ def init_projector(proj_settings, context):
     proj_settings.v_shift = 0.0
     proj_settings.h_shift = 0.0
     proj_settings.focus_distance = 1.0
+    proj_settings.projector_w = 50.0
+    proj_settings.projector_h = 20.0
+    proj_settings.projector_d = 40.0
     proj_settings.projected_texture = Textures.CHECKER.value
     proj_settings.projected_color = random_color()
     proj_settings.resolution = '1920x1080'
@@ -692,6 +734,9 @@ def init_projector(proj_settings, context):
     update_pixel_grid(proj_settings, context)
     update_projection_helper(proj_settings, context)
     update_projector_visibility(context)
+    update_projector_width(proj_settings, context)
+    update_projector_height(proj_settings, context)
+    update_projector_depth(proj_settings, context)
 
 
 class PROJECTOR_OT_create_projector(Operator):
@@ -805,7 +850,27 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         soft_min=0, soft_max=10,
         update=update_projection_by_diagonal,
         subtype='DISTANCE')
+    
+    projector_w: bpy.props.FloatProperty(
+        name="Projector Width",
+        description="Set the width of the projector",
+        soft_min=0, soft_max=100,
+        update=update_projector_width)
 
+    projector_h: bpy.props.FloatProperty(
+        name="Projector Height",
+        description="Set the height of the projector",
+        soft_min=0, soft_max=50,
+        update=update_projector_height,
+        subtype='DISTANCE')
+    
+    projector_d: bpy.props.FloatProperty(
+        name="Projector Depth",
+        description="Set the depth of the projector",
+        soft_min=0, soft_max=100,
+        update=update_projector_depth,
+        subtype='DISTANCE')
+    
     resolution: bpy.props.EnumProperty(
         items=RESOLUTIONS,
         default='1920x1080',
