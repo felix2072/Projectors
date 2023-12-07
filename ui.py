@@ -43,7 +43,6 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             # Lens Shift
             col = box.column(align=True)
-            col.prop(proj_settings, 'o_shift', text='Vertical Offset')
             col.prop(proj_settings, 'v_shift', text='Vertical Shift')
             col.prop(proj_settings, 'h_shift', text='Horizontal Shift')
 
@@ -51,7 +50,7 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             #pro = col.split(factor=0.0, align=True)
             pro = box.column(align=True)
-            pro.prop(data=proj_settings, property='w_projection', text='width',slider=True)
+            pro.prop(proj_settings, 'w_projection', text='width',slider=True)
             pro.prop(proj_settings, 'h_projection', text='height',slider=True)
             pro.prop(proj_settings, 'd_projection', text='diagonal',slider=True)
 

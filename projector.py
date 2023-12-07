@@ -40,7 +40,11 @@ RESOLUTIONS = [
     # 17:9 aspect ratio
     ('4096x2160', 'Native 4K (4096x2160) 17:9', '', 12),
     # 1:1 aspect ratio
-    ('1000x1000', 'Square (1000x1000) 1:1', '', 13)
+    ('1000x1000', 'Square (1000x1000) 1:1', '', 13),
+    # 1:2 aspect ratio
+    ('1000x2000', 'Landscape (1000x2000) 1:2', '', 14),
+    # 2:1 aspect ratio
+    ('2000x1000', 'Portrait (2000x1000) 2:1', '', 15)
 ]
 
 PROJECTED_OUTPUTS = [(Textures.CHECKER.value, 'Checker', '', 1),
@@ -265,7 +269,7 @@ def update_throw_ratio(proj_settings, context):
     throw_ratio = proj_settings.throw_ratio
     focus_distance = proj_settings.focus_distance
     projector.data.lens = 10*throw_ratio
-    projector.data.display_size = 1.0/throw_ratio*focus_distance
+    #projector.data.display_size = 1.0/throw_ratio*focus_distance
 
     # Adjust Texture to fit new camera ###
     w, h = get_resolution(proj_settings, context)
@@ -285,13 +289,15 @@ def update_throw_ratio(proj_settings, context):
         nodes['Mapping.001'].inputs[3].default_value[0] = 1 / throw_ratio
         nodes['Mapping.001'].inputs[3].default_value[1] = 1 / \
             throw_ratio * inverted_aspect_ratio
+        
+    update_lens_shift(proj_settings,context)
     update_projection_helper(proj_settings, context)
 
 def update_focus_distance(proj_settings, context):
     projector = get_projector(context)
     throw_ratio = proj_settings.throw_ratio
     focus_distance = proj_settings.focus_distance
-    projector.data.display_size = 1/throw_ratio*focus_distance
+    #projector.data.display_size = 1/throw_ratio*focus_distance
     update_projection_helper(proj_settings, context)
 
 def update_lens_shift(proj_settings, context):
@@ -303,29 +309,41 @@ def update_lens_shift(proj_settings, context):
     v_shift = proj_settings.get('v_shift', 0.0) / 100
     throw_ratio = proj_settings.get('throw_ratio')
 
+    w, h = get_resolution(proj_settings, context)
+    v_shift_factor = h/w*v_shift
+
     # Update the properties of the camera.
     cam = projector
     cam.data.shift_x = h_shift
-    cam.data.shift_y = v_shift
+    cam.data.shift_y = v_shift_factor
 
     # Update spotlight node setup.
     spot = projector.children[get_child_ID_by_type(projector.children,'LIGHT')]
     nodes = spot.data.node_tree.nodes['Group'].node_tree.nodes
     if bpy.app.version < (2, 81):
         nodes['Mapping.001'].translation[0] = h_shift / throw_ratio
-        nodes['Mapping.001'].translation[1] = v_shift / throw_ratio
+        #nodes['Mapping.001'].translation[1] = v_shift / throw_ratio
+        nodes['Mapping.001'].translation[1] = v_shift_factor / throw_ratio
     else:
         nodes['Mapping.001'].inputs[1].default_value[0] = h_shift / throw_ratio
-        nodes['Mapping.001'].inputs[1].default_value[1] = v_shift / throw_ratio
+        #nodes['Mapping.001'].inputs[1].default_value[1] = v_shift / throw_ratio
+        nodes['Mapping.001'].inputs[1].default_value[1] = v_shift_factor / throw_ratio
+    update_projection_helper(proj_settings, context)
 
-def update_projection_dimension(proj_settings, context):
-    projector = get_projector(context)
-    w_projection = proj_settings.get('w_projection', 0.0)
-    h_projection = proj_settings.get('h_projection', 0.0)
-    d_projection = proj_settings.get('d_projection', 0.0)
+def update_projection_by_width(proj_settings, context):
+    w_projection = proj_settings.w_projection
+    #proj_settings.throw_ratio = w_projection
+    
 
-def update_projector_size(proj_settings, context):
-    projector = get_projector(context)
+def update_projection_by_height(proj_settings, context):
+    h_projection = proj_settings.h_projection
+    #proj_settings.throw_ratio = h_projection*0.1
+    #update_throw_ratio(proj_settings, context)
+
+def update_projection_by_diagonal(proj_settings, context):
+    d_projection = proj_settings.d_projection
+    #proj_settings.throw_ratio = d_projection*0.1
+    #update_throw_ratio(proj_settings, context)
 
 def update_resolution(proj_settings, context):
     projector = get_projector(context)
@@ -371,7 +389,8 @@ def update_pixel_grid(proj_settings, context):
 def update_projection_helper(proj_settings, context):
     
     projector = get_projector(context)
-    curve = projector.children[get_child_ID_by_name(projector.children,'Projector.Plane')]
+    #curve = projector.children.name.startswith('Projector.Plane')
+    curve = projector.children[get_child_ID_by_name(projector.children,'Plane')]
 
     # todo: set transformation back to zero
     """ curve.delta_location((0.0, 0.0, 0.0))
@@ -388,31 +407,41 @@ def update_projection_helper(proj_settings, context):
     w = float(proj_settings.resolution[0:cut])
     h = float(proj_settings.resolution[cut+1:])
     factor = focus_distance*1/throw_ratio/2
+    
+    w, h = get_resolution(proj_settings, context)
+    h_shift = proj_settings.get('h_shift', 0.0) / 100
+    v_shift = proj_settings.get('v_shift', 0.0) / 100
+    v_shift_factor = h/w*v_shift / throw_ratio
 
-    pn[0].co.x = -factor
-    pn[0].co.y = h/w*factor
+    pn[0].co.x = -factor+h_shift
+    pn[0].co.y = h/w*factor+v_shift_factor
     pn[0].co.z = -focus_distance
 
-    pn[1].co.x = factor
-    pn[1].co.y = h/w*factor
+    pn[1].co.x = factor+h_shift
+    pn[1].co.y = h/w*factor+v_shift_factor
     pn[1].co.z = -focus_distance
 
-    pn[2].co.x = factor
-    pn[2].co.y = -(h/w*factor)
+    pn[2].co.x = factor+h_shift
+    pn[2].co.y = -(h/w*factor)+v_shift_factor
     pn[2].co.z = -focus_distance
 
-    pn[3].co.x = -factor
-    pn[3].co.y = -(h/w*factor)
+    pn[3].co.x = -factor+h_shift
+    pn[3].co.y = -(h/w*factor)+v_shift_factor
     pn[3].co.z = -focus_distance
 
-    pn[4].co.x = -factor
-    pn[4].co.y = h/w*factor
-    pn[4].co.z = -focus_distance
+    pn[4].co.x = pn[0].co.x
+    pn[4].co.y = pn[0].co.y
+    pn[4].co.z = pn[0].co.z
 
     proj_settings.w_projection = (pn[0].co - pn[1].co).length
     proj_settings.h_projection = (pn[1].co - pn[2].co).length
     proj_settings.d_projection = (pn[0].co - pn[2].co).length
-    
+
+def update_projector_visibility(context):
+    projector = get_projector(context)
+    projector.hide_viewport = False
+    projector.hide_render = False
+
 def create_pixel_grid_node_group():
     node_group = bpy.data.node_groups.new(
         '_Projectors-Addon_PixelGrid', 'ShaderNodeTree')
@@ -530,7 +559,7 @@ def create_projector(context):
     # ### Spot Light ###
     bpy.ops.object.light_add(type='SPOT', location=(0, 0, 0))
     spot = context.object
-    spot.name = 'Projector.Spotlight'
+    spot.name = 'Projector_Spotlight.001'
     spot.scale = (.01, .01, .01)
     spot.data.spot_size = math.pi
     spot.data.spot_blend = 0
@@ -548,7 +577,9 @@ def create_projector(context):
     cam.name = 'Projector'
     cam.data.lens_unit = 'MILLIMETERS'
     cam.data.sensor_width = 10
-    cam.data.display_size = 1
+    cam.data.display_size = 0.01
+
+    #cam.hide_render = False
 
     # Parent light to cam.
     spot.parent = cam
@@ -559,7 +590,7 @@ def create_projector(context):
     
     bpy.ops.curve.primitive_nurbs_path_add(radius=1, enter_editmode=False)
     obj = bpy.context.object
-    obj.name = "Projector.Plane"
+    obj.name = "Projector_Plane.001"
 
     # De-select all points
     for pn in obj.data.splines[0].points:
@@ -642,8 +673,7 @@ def create_projector(context):
 def init_projector(proj_settings, context):
     # # Add custom properties to store projector settings on the camera obj.
     proj_settings.throw_ratio = 1.0
-    proj_settings.power = 1000.0
-    proj_settings.o_shift = 0.0
+    proj_settings.power = 100.0
     proj_settings.v_shift = 0.0
     proj_settings.h_shift = 0.0
     proj_settings.focus_distance = 1.0
@@ -661,6 +691,7 @@ def init_projector(proj_settings, context):
     update_power(proj_settings, context)
     update_pixel_grid(proj_settings, context)
     update_projection_helper(proj_settings, context)
+    update_projector_visibility(context)
 
 
 class PROJECTOR_OT_create_projector(Operator):
@@ -729,16 +760,9 @@ class ProjectorSettings(bpy.types.PropertyGroup):
 
     power: bpy.props.FloatProperty(
         name="Projector Power",
-        soft_min=0, soft_max=999999,
+        soft_min=0.01, soft_max=30,
         update=update_power,
         unit='POWER')
-
-    o_shift: bpy.props.FloatProperty(
-        name="Vertical Offset",
-        description="Vertical Lens Offset",
-        soft_min=-100, soft_max=100,
-        update=update_lens_shift,
-        subtype='PERCENTAGE')
 
     v_shift: bpy.props.FloatProperty(
         name="Vertical Shift",
@@ -765,21 +789,21 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         name="Projection Width",
         description="Get the projection width",
         soft_min=0, soft_max=10,
-        update=update_projection_dimension,
+        update=update_projection_by_width,
         subtype='DISTANCE')
 
     h_projection: bpy.props.FloatProperty(
         name="Projection Height",
         description="Get the projection height",
         soft_min=0, soft_max=10,
-        update=update_projection_dimension,
+        update=update_projection_by_height,
         subtype='DISTANCE')
 
     d_projection: bpy.props.FloatProperty(
         name="Projection Diagonal",
         description="Get the projection diagonal",
         soft_min=0, soft_max=10,
-        update=update_projection_dimension,
+        update=update_projection_by_diagonal,
         subtype='DISTANCE')
 
     resolution: bpy.props.EnumProperty(

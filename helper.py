@@ -58,7 +58,7 @@ def get_child_ID_by_type(children,name):
 def get_child_ID_by_name(children,name):
     index = 0
     for child in children:
-        if child.name != name:
+        if name not in child.name:
             index += 1
             continue
         else:
