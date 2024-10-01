@@ -830,103 +830,103 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         name="Throw Ratio",
         soft_min=0.1, soft_max=5,
         update=update_throw_ratio,
-        subtype='FACTOR')
+        subtype='FACTOR') # type: ignore
 
     power: bpy.props.FloatProperty(
         name="Projector Power",
         soft_min=0.01, soft_max=30,
         update=update_power,
-        unit='POWER')
+        unit='POWER') # type: ignore
 
     v_shift: bpy.props.FloatProperty(
         name="Vertical Shift",
         description="Vertical Lens Shift",
         soft_min=-100, soft_max=100,
         update=update_lens_shift,
-        subtype='PERCENTAGE')
+        subtype='PERCENTAGE') # type: ignore
 
     h_shift: bpy.props.FloatProperty(
         name="Horizontal Shift",
         description="Horizontal Lens Shift",
         soft_min=-100, soft_max=100,
         update=update_lens_shift,
-        subtype='PERCENTAGE')
+        subtype='PERCENTAGE') # type: ignore
 
     focus_distance: bpy.props.FloatProperty(
         name="Focus Distance",
         description="Set the focus distance in meter",
         soft_min=0.01, soft_max=30,
         update=update_focus_distance,
-        subtype='DISTANCE')
+        subtype='DISTANCE') # type: ignore
 
     w_projection: bpy.props.FloatProperty(
         name="Projection Width",
         description="Get the projection width",
         soft_min=0, soft_max=10,
         update=update_projection_by_width,
-        subtype='DISTANCE')
+        subtype='DISTANCE') # type: ignore
 
     h_projection: bpy.props.FloatProperty(
         name="Projection Height",
         description="Get the projection height",
         soft_min=0, soft_max=10,
         update=update_projection_by_height,
-        subtype='DISTANCE')
+        subtype='DISTANCE') # type: ignore
 
     d_projection: bpy.props.FloatProperty(
         name="Projection Diagonal",
         description="Get the projection diagonal",
         soft_min=0, soft_max=10,
         update=update_projection_by_diagonal,
-        subtype='DISTANCE')
+        subtype='DISTANCE') # type: ignore
     
     projector_w: bpy.props.FloatProperty(
         name="Projector Width",
         description="Set the width of the projector",
         soft_min=0, soft_max=100,
-        update=update_projector_width)
+        update=update_projector_width) # type: ignore
 
     projector_h: bpy.props.FloatProperty(
         name="Projector Height",
         description="Set the height of the projector",
         soft_min=0, soft_max=50,
         update=update_projector_height,
-        subtype='DISTANCE')
+        subtype='DISTANCE') # type: ignore
     
     projector_d: bpy.props.FloatProperty(
         name="Projector Depth",
         description="Set the depth of the projector",
         soft_min=0, soft_max=100,
         update=update_projector_depth,
-        subtype='DISTANCE')
+        subtype='DISTANCE') # type: ignore
     
     resolution: bpy.props.EnumProperty(
         items=RESOLUTIONS,
         default='1920x1080',
         description="Select a Resolution for your Projector",
-        update=update_resolution)
+        update=update_resolution) # type: ignore
 
     use_custom_texture_res: bpy.props.BoolProperty(
         name="Let Image Define Projector Resolution",
         default=True,
         description="Use the resolution from the image as the projector resolution. Warning: After selecting a new image toggle this checkbox to update",
-        update=update_throw_ratio)
+        update=update_throw_ratio) # type: ignore
 
     projected_color: bpy.props.FloatVectorProperty(
         subtype='COLOR',
-        update=update_checker_color)
+        update=update_checker_color) # type: ignore
 
     projected_texture: bpy.props.EnumProperty(
         items=PROJECTED_OUTPUTS,
         default=Textures.CHECKER.value,
         description="What do you to project?",
-        update=update_throw_ratio)
+        update=update_throw_ratio) # type: ignore
 
     show_pixel_grid: bpy.props.BoolProperty(
         name="Show Pixel Grid",
         description="When checked the image is divided into a pixel grid with the dimensions of the image resolution.",
         default=False,
-        update=update_pixel_grid)
+        update=update_pixel_grid) # type: ignore
 
 
 def register():
