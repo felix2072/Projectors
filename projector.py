@@ -7,6 +7,7 @@ from enum import Enum
 import bpy
 from bpy import context, data, ops
 from bpy.types import Operator
+import bmesh
 
 from .helper import (ADDON_ID, auto_offset,
                      get_projectors, get_projector, get_child_ID_by_name, get_child_ID_by_type, random_color)
@@ -402,6 +403,12 @@ def update_checker_color(proj_settings, context):
         context).children[get_child_ID_by_type(projector.children,'LIGHT')].data.node_tree.nodes['Group'].node_tree.nodes
     c = proj_settings.projected_color
     nodes['Checker Texture'].inputs['Color2'].default_value = [c.r, c.g, c.b, 1]
+    projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
+    projector_cube.material_slots[0].material.diffuse_color = [c.r, c.g, c.b, 0.5]
+    for i in range(4):
+        projector_plane = projector.children[get_child_ID_by_name(projector.children,'Cube')]
+        projector_cube.material_slots[0].material.diffuse_color = [c.r, c.g, c.b, 0.5]
+
 
 
 def update_power(proj_settings, context):
@@ -429,16 +436,9 @@ def update_pixel_grid(proj_settings, context):
 def update_projection_helper(proj_settings, context):
     
     projector = get_projector(context)
-    #curve = projector.children.name.startswith('Projector.Plane')
-    curve = projector.children[get_child_ID_by_name(projector.children,'Plane')]
-
-    # todo: set transformation back to zero
-    """ curve.delta_location((0.0, 0.0, 0.0))
-    curve.delta_rotation_euler((0.0, 0.0, 0.0), 'XYZ') """
-
+    curve = projector.children[get_child_ID_by_name(projector.children,'HelperLine')]
+    
     pn = curve.data.splines[0].points
-    """ end_point_idx = (len(obj.data.splines[0].points) - 1)
-    pn[end_point_idx].select = True """
 
     throw_ratio = proj_settings.throw_ratio
     focus_distance = proj_settings.focus_distance
@@ -482,7 +482,18 @@ def update_projection_helper(proj_settings, context):
     pn[14].co = ((0.0,0.0,0.0,0.0))
     pn[15].co = ((0.0,0.0,0.0,0.0))
     pn[16].co = ((0.0,0.0,0.0,0.0))
-    
+
+    for j in range(4):
+        plane = projector.children[get_child_ID_by_name(projector.children,'HelperPlane_' + str(j))]
+        for i in range(4):
+            if i < 2:
+                plane.data.vertices[i].co.x = pn[i+j].co.x*2
+                plane.data.vertices[i].co.y = pn[i+j].co.y*2
+                plane.data.vertices[i].co.z = pn[i+j].co.z
+            else:
+                plane.data.vertices[i].co.x = 0
+                plane.data.vertices[i].co.y = 0
+                plane.data.vertices[i].co.z = 0
 
     proj_settings.w_projection = (pn[0].co - pn[1].co).length
     proj_settings.h_projection = (pn[1].co - pn[2].co).length
@@ -601,7 +612,56 @@ def create_pixel_grid_node_group():
     links.new(mix_shader.outputs[0], group_output.inputs[0])
 
     return node_group
-    
+
+def create_shape_from_verts(obj_name):
+
+    # create the mesh data
+    mesh = bpy.data.meshes.new(f"{obj_name}_mesh")
+
+    # create the mesh object using the mesh data
+    mesh_obj = bpy.data.objects.new(obj_name, mesh)
+
+    # add the mesh object into the scene
+    bpy.context.scene.collection.objects.link(mesh_obj)
+
+    # create a new bmesh
+    bm = bmesh.new()
+
+    # create a list of vertex coordinates
+    vert_coords = [
+        (1.0, 1.0, 0.0),
+        (1.0, -1.0, 0.0),
+        (-1.0, -1.0, 0.0),
+        (-1.0, 1.0, 0.0),
+        (0.0, 0.0, 1.0),
+    ]
+
+    # create and add a vertices
+    for coord in vert_coords:
+        bm.verts.new(coord)
+
+    # create a list of vertex indices that are part of a given face
+    face_vert_indices = [
+        (0, 1, 2, 3),
+        (4, 1, 0),
+        (4, 2, 1),
+        (4, 3, 2),
+        (4, 0, 3),
+    ]
+
+    bm.verts.ensure_lookup_table()
+
+    for vert_indices in face_vert_indices:
+        bm.faces.new([bm.verts[index] for index in vert_indices])
+
+    # writes the bmesh data into the mesh data
+    bm.to_mesh(mesh)
+
+    # [Optional] update the mesh data (helps with redrawing the mesh in the viewport)
+    mesh.update()
+
+    # clean up/free memory that was allocated for the bmesh
+    bm.free() 
 
 def create_projector(context):
     """
@@ -649,7 +709,8 @@ def create_projector(context):
     bpy.ops.curve.primitive_nurbs_path_add(radius=1, enter_editmode=True)
     obj = bpy.context.object
 
-    obj.name = "Projector_Plane"
+    obj.name = "Projector_HelperLine"
+    obj.location = (0,0,0)
 
     # De-select all points
     for pn in obj.data.splines[0].points:
@@ -694,8 +755,6 @@ def create_projector(context):
     bpy.ops.curve.spline_type_set(type='POLY')
     bpy.ops.object.mode_set(mode = 'OBJECT')
 
-
-
     """ bpy.ops.curve.extrude_move(CURVE_OT_extrude={"mode":'TRANSLATION'},
     TRANSFORM_OT_translate={"value":(0, 2, 0)}) """
 
@@ -729,6 +788,27 @@ def create_projector(context):
     projector_cube.dimensions = (1,1,1)
     projector_cube.visible_shadow = False
     projector_cube.parent = cam
+    bpy.ops.object.material_slot_add()
+    projector_cube.material_slots[0].link = 'OBJECT'
+    projector_cube_mat = bpy.data.materials.new("Projector_Cube_Mat")
+    projector_cube.material_slots[0].material = projector_cube_mat
+    
+    """create_shape_from_verts("Projector_HelperPlane")
+    sceneObjects = bpy.context.scene.objects
+    HelperPlane = sceneObjects[get_child_ID_by_name(sceneObjects,'HelperPlane')]
+    HelperPlane.parent = projector_cube"""
+
+    for i in range(4):
+        bpy.ops.mesh.primitive_plane_add()
+        Projector_HelperPlane = bpy.context.object
+        Projector_HelperPlane.name = 'Projector_HelperPlane_' + str(i) + ".001"
+        Projector_HelperPlane.dimensions = (1,1,1)
+        Projector_HelperPlane.visible_shadow = False
+        Projector_HelperPlane.parent = cam  
+        bpy.ops.object.material_slot_add()
+        Projector_HelperPlane.material_slots[0].link = 'OBJECT'
+        Projector_HelperPlane_mat = bpy.data.materials.new("Projector_HelperPlane_Mat")
+        Projector_HelperPlane.material_slots[0].material = Projector_HelperPlane_mat
 
     bpy.context.view_layer.objects.active = cam
     
