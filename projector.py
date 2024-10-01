@@ -444,22 +444,23 @@ def update_projection_helper(proj_settings, context):
     
     w, h = get_resolution(proj_settings, context)
     h_shift = proj_settings.get('h_shift', 0.0) / 100
+    h_shift_factor = h_shift*focus_distance
     v_shift = proj_settings.get('v_shift', 0.0) / 100
-    v_shift_factor = h/w*v_shift / throw_ratio
+    v_shift_factor = h/w*v_shift / throw_ratio*focus_distance
 
-    pn[0].co.x = -factor+h_shift
+    pn[0].co.x = -factor+h_shift_factor
     pn[0].co.y = h/w*factor+v_shift_factor
     pn[0].co.z = -focus_distance
 
-    pn[1].co.x = factor+h_shift
+    pn[1].co.x = factor+h_shift_factor
     pn[1].co.y = h/w*factor+v_shift_factor
     pn[1].co.z = -focus_distance
 
-    pn[2].co.x = factor+h_shift
+    pn[2].co.x = factor+h_shift_factor
     pn[2].co.y = -(h/w*factor)+v_shift_factor
     pn[2].co.z = -focus_distance
 
-    pn[3].co.x = -factor+h_shift
+    pn[3].co.x = -factor+h_shift_factor
     pn[3].co.y = -(h/w*factor)+v_shift_factor
     pn[3].co.z = -focus_distance
 
