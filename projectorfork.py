@@ -12,7 +12,7 @@ from .helper import (ADDON_ID, auto_offset,
                      get_projectors, get_projector, get_child_ID_by_name, get_child_ID_by_type, random_color)
 
 logging.basicConfig(
-    format='[Projectors Addon]: %(name)s - %(levelname)s - %(message)s')
+    format='[ProjectorForks Addon]: %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(name=__file__)
 
 
@@ -52,9 +52,9 @@ PROJECTED_OUTPUTS = [(Textures.CHECKER.value, 'Checker', '', 1),
                      (Textures.CUSTOM_TEXTURE.value, 'Custom Texture', '', 3)]
 
 
-class PROJECTOR_OT_change_color_randomly(Operator):
+class PROJECTORFORK_OT_change_color_randomly_fork(Operator):
     """ Randomly change the color of the projected checker texture."""
-    bl_idname = 'projector.change_color'
+    bl_idname = 'projectorfork.change_color'
     bl_label = 'Change color of projection checker texture'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -103,9 +103,13 @@ def add_projector_node_tree_to_spot(spot):
     node_group = bpy.data.node_groups.new('_Projector', 'ShaderNodeTree')
 
     # Create output sockets for the node group.
-    output = node_group.outputs
-    output.new('NodeSocketVector', 'texture vector')
-    output.new('NodeSocketColor', 'color')
+    if(bpy.app.version >= (4, 0)):
+        node_group.interface.new_socket('texture vector',  in_out="OUTPUT", socket_type='NodeSocketVector')
+        node_group.interface.new_socket('color', in_out="OUTPUT", socket_type='NodeSocketColor')
+    else:
+        output = node_group.outputs
+        output.new('NodeSocketVector', 'texture vector')
+        output.new('NodeSocketColor', 'color')
 
     # # Inside Group Node #
     # #####################
@@ -122,6 +126,12 @@ def add_projector_node_tree_to_spot(spot):
 
     tex = nodes.new('ShaderNodeTexCoord')
     tex.location = auto_pos(200)
+
+    geo = nodes.new('ShaderNodeNewGeometry')
+    geo.location = auto_pos(0, -300)
+    vec_transform = nodes.new('ShaderNodeVectorTransform')
+    vec_transform.location = auto_pos(200)
+    vec_transform.vector_type = 'NORMAL'
 
     map_1 = nodes.new('ShaderNodeMapping')
     map_1.vector_type = 'TEXTURE'
@@ -201,7 +211,11 @@ def add_projector_node_tree_to_spot(spot):
     # ##############
 
     # Link inside group node
-    tree.links.new(tex.outputs['Normal'], map_1.inputs['Vector'])
+    if(bpy.app.version >= (4, 0)):
+        tree.links.new(geo.outputs['Incoming'], vec_transform.inputs['Vector'])
+        tree.links.new(vec_transform.outputs['Vector'], map_1.inputs['Vector'])
+    else:
+        tree.links.new(tex.outputs['Normal'], map_1.inputs['Vector'])
     tree.links.new(map_1.outputs['Vector'], sep.inputs['Vector'])
 
     tree.links.new(sep.outputs[0], div_1.inputs[0])  # X -> value0
@@ -225,8 +239,8 @@ def add_projector_node_tree_to_spot(spot):
     tree.links.new(checker_tex.outputs['Color'], mix_rgb.inputs[2])
 
     # Link in root
-    root_tree.links.new(group.outputs[0], user_texture.inputs['Vector'])
-    root_tree.links.new(group.outputs[1], emission.inputs['Color'])
+    root_tree.links.new(group.outputs['texture vector'], user_texture.inputs['Vector'])
+    root_tree.links.new(group.outputs['color'], emission.inputs['Color'])
     root_tree.links.new(emission.outputs['Emission'], output.inputs['Surface'])
 
     # Pixel Grid Setup
@@ -283,11 +297,11 @@ def update_throw_ratio(proj_settings, context):
     spot = projector.children[get_child_ID_by_type(projector.children,'LIGHT')]
     nodes = spot.data.node_tree.nodes['Group'].node_tree.nodes
     if bpy.app.version < (2, 81):
-        nodes['Mapping.001'].scale[0] = 1 / throw_ratio
-        nodes['Mapping.001'].scale[1] = 1 / throw_ratio * inverted_aspect_ratio
+        nodes['Mapping'].scale[0] = 1 / throw_ratio
+        nodes['Mapping'].scale[1] = 1 / throw_ratio * inverted_aspect_ratio
     else:
-        nodes['Mapping.001'].inputs[3].default_value[0] = 1 / throw_ratio
-        nodes['Mapping.001'].inputs[3].default_value[1] = 1 / \
+        nodes['Mapping'].inputs[3].default_value[0] = 1 / throw_ratio
+        nodes['Mapping'].inputs[3].default_value[1] = 1 / \
             throw_ratio * inverted_aspect_ratio
         
     update_lens_shift(proj_settings,context)
@@ -357,6 +371,12 @@ def update_projector_depth(proj_settings, context):
     projector = get_projector(context)
     projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
     projector_cube.dimensions[2] = proj_settings.projector_d*0.01
+    projector_cube.location[2] = projector_cube.dimensions[2]/2
+
+def update_projector_dimensions(proj_settings, context):
+    projector = get_projector(context)
+    projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
+    projector_cube.scale = (proj_settings.projector_w*0.01,proj_settings.projector_h*0.01,proj_settings.projector_d*0.01)
     projector_cube.location[2] = projector_cube.dimensions[2]/2
 
 def update_resolution(proj_settings, context):
@@ -475,12 +495,18 @@ def create_pixel_grid_node_group():
         '_Projectors-Addon_PixelGrid', 'ShaderNodeTree')
 
     # Create input/output sockets for the node group.
-    inputs = node_group.inputs
-    inputs.new('NodeSocketShader', 'Shader')
-    inputs.new('NodeSocketVector', 'Vector')
+    if(bpy.app.version >= (4, 0)):
+        node_group.interface.new_socket('Shader', socket_type='NodeSocketShader')
+        node_group.interface.new_socket('Vector', socket_type='NodeSocketVector')
 
-    outputs = node_group.outputs
-    outputs.new('NodeSocketShader', 'Shader')
+        node_group.interface.new_socket('Shader', in_out='OUTPUT', socket_type='NodeSocketShader')
+    else:
+        inputs = node_group.inputs
+        inputs.new('NodeSocketShader', 'Shader')
+        inputs.new('NodeSocketVector', 'Vector')
+
+        outputs = node_group.outputs
+        outputs.new('NodeSocketShader', 'Shader')
 
     nodes = node_group.nodes
 
@@ -574,7 +600,7 @@ def create_pixel_grid_node_group():
     return node_group
     
 
-def create_projector(context):
+def create_projector_fork(context):
     """
     Create a new projector composed out of a camera (parent obj) and a spotlight (child not intended for user interaction).
     The camera is the object intended for the user to manipulate and custom properties are stored there.
@@ -587,11 +613,11 @@ def create_projector(context):
     # ### Spot Light ###
     bpy.ops.object.light_add(type='SPOT', location=(0, 0, 0))
     spot = context.object
-    spot.name = 'Projector_Spotlight.001'
+    spot.name = 'Projector_Spotlight'
     spot.scale = (.01, .01, .01)
-    spot.data.spot_size = math.pi
+    spot.data.spot_size = math.pi - 0.001
     spot.data.spot_blend = 0
-    spot.data.shadow_soft_size = 0.00000001
+    spot.data.shadow_soft_size = 0.0
     spot.hide_select = True
     spot[ADDON_ID.format('spot')] = True
     spot.data.cycles.use_multiple_importance_sampling = False
@@ -602,7 +628,7 @@ def create_projector(context):
                               location=(0, 0, 0),
                               rotation=(0, 0, 0))
     cam = context.object
-    cam.name = 'Projector.001'
+    cam.name = 'Projector'
     cam.data.lens_unit = 'MILLIMETERS'
     cam.data.sensor_width = 10
     cam.data.display_size = 0.01
@@ -620,7 +646,7 @@ def create_projector(context):
     bpy.ops.curve.primitive_nurbs_path_add(radius=1, enter_editmode=True)
     obj = bpy.context.object
 
-    obj.name = "Projector_Plane.001"
+    obj.name = "Projector_Plane"
 
     # De-select all points
     for pn in obj.data.splines[0].points:
@@ -696,7 +722,7 @@ def create_projector(context):
 
     bpy.ops.mesh.primitive_cube_add(enter_editmode=False,align='WORLD',location=(0,0,0),scale=(1,1,1))
     projector_cube = bpy.context.object
-    projector_cube.name = 'Projector_Cube.001'
+    projector_cube.name = 'Projector_Cube'
     projector_cube.dimensions = (1,1,1)
     projector_cube.visible_shadow = False
     projector_cube.parent = cam
@@ -704,7 +730,7 @@ def create_projector(context):
     bpy.context.view_layer.objects.active = cam
     
     bpy.ops.object.select_all(action='DESELECT')
-    bpy.data.objects["Projector.001"].select_set(True)
+    bpy.data.objects["Projector"].select_set(True)
     cam = context.object
     return cam
 
@@ -716,9 +742,9 @@ def init_projector(proj_settings, context):
     proj_settings.v_shift = 0.0
     proj_settings.h_shift = 0.0
     proj_settings.focus_distance = 1.0
-    proj_settings.projector_w = 50.0
-    proj_settings.projector_h = 20.0
-    proj_settings.projector_d = 40.0
+    proj_settings.projector_w = 52.0
+    proj_settings.projector_h = 14.0
+    proj_settings.projector_d = 48.0
     proj_settings.projected_texture = Textures.CHECKER.value
     proj_settings.projected_color = random_color()
     proj_settings.resolution = '1920x1080'
@@ -734,19 +760,21 @@ def init_projector(proj_settings, context):
     update_pixel_grid(proj_settings, context)
     update_projection_helper(proj_settings, context)
     update_projector_visibility(context)
-    update_projector_width(proj_settings, context)
-    update_projector_height(proj_settings, context)
-    update_projector_depth(proj_settings, context)
+    update_projector_dimensions(proj_settings, context)
 
 
-class PROJECTOR_OT_create_projector(Operator):
+class PROJECTORFORK_OT_create_projector_fork(Operator):
     """ Create Projector """
-    bl_idname = 'projector.create'
+    bl_idname = 'projectorfork.create'
     bl_label = 'Create a new Projector'
     bl_options = {'REGISTER', 'UNDO'}
+    
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'OBJECT'
 
     def execute(self, context):
-        projector = create_projector(context)
+        projector = create_projector_fork(context)
         init_projector(projector.proj_settings, context)
         return {'FINISHED'}
 
@@ -777,8 +805,9 @@ def update_projected_texture(proj_settings, context):
             custom_tex_node.outputs[0], emission_node.inputs[0])
 
 
-class PROJECTOR_OT_delete_projector(Operator):
-    bl_idname = 'projector.delete'
+class PROJECTORFORK_OT_delete_projector_fork(Operator):
+    """Delete Projector"""
+    bl_idname = 'projectorfork.delete'
     bl_label = 'Delete Projector'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -796,7 +825,7 @@ class PROJECTOR_OT_delete_projector(Operator):
         return {'FINISHED'}
 
 
-class ProjectorSettings(bpy.types.PropertyGroup):
+class ProjectorForkSettings(bpy.types.PropertyGroup):
     throw_ratio: bpy.props.FloatProperty(
         name="Throw Ratio",
         soft_min=0.1, soft_max=5,
@@ -901,16 +930,16 @@ class ProjectorSettings(bpy.types.PropertyGroup):
 
 
 def register():
-    bpy.utils.register_class(ProjectorSettings)
-    bpy.utils.register_class(PROJECTOR_OT_create_projector)
-    bpy.utils.register_class(PROJECTOR_OT_delete_projector)
-    bpy.utils.register_class(PROJECTOR_OT_change_color_randomly)
+    bpy.utils.register_class(ProjectorForkSettings)
+    bpy.utils.register_class(PROJECTORFORK_OT_create_projector_fork)
+    bpy.utils.register_class(PROJECTORFORK_OT_delete_projector_fork)
+    bpy.utils.register_class(PROJECTORFORK_OT_change_color_randomly_fork)
     bpy.types.Object.proj_settings = bpy.props.PointerProperty(
-        type=ProjectorSettings)
+        type=ProjectorForkSettings)
 
 
 def unregister():
-    bpy.utils.unregister_class(PROJECTOR_OT_change_color_randomly)
-    bpy.utils.unregister_class(PROJECTOR_OT_delete_projector)
-    bpy.utils.unregister_class(PROJECTOR_OT_create_projector)
-    bpy.utils.unregister_class(ProjectorSettings)
+    bpy.utils.unregister_class(PROJECTORFORK_OT_change_color_randomly_fork)
+    bpy.utils.unregister_class(PROJECTORFORK_OT_delete_projector_fork)
+    bpy.utils.unregister_class(PROJECTORFORK_OT_create_projector_fork)
+    bpy.utils.unregister_class(ProjectorForkSettings)

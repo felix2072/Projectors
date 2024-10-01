@@ -1,14 +1,14 @@
-from . import ui
-from . import projector
-from . import operators
+from . import uiFork
+from . import projectorfork
+from . import operatorsFork
 
 bl_info = {
-    "name": "Projector",
+    "name": "ProjectorFork",
     "author": "Jonas Schell",
     "description": "Easy Projector creation and modification.",
-    "blender": (2, 81, 0),
-    "version": (2023, 1, 0),
-    "location": "3D Viewport > Add > Light > Projector",
+    "blender": (4, 2, 1),
+    "version": (2024, 3, 0),
+    "location": "3D Viewport > Add > Light > ProjectorFork",
     "category": "Lighting",
     "wiki_url": "https://github.com/Ocupe/Projectors/wiki",
     "tracker_url": "https://github.com/Ocupe/Projectors/issues"
@@ -16,12 +16,12 @@ bl_info = {
 
 
 def register():
-    projector.register()
-    operators.register()
-    ui.register()
+    projectorfork.register()
+    operatorsFork.register()
+    uiFork.register()
 
 
 def unregister():
-    ui.unregister()
-    operators.unregister()
-    projector.unregister()
+    uiFork.unregister()
+    operatorsFork.unregister()
+    projectorfork.unregister()
