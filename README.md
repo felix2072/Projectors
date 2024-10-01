@@ -39,3 +39,6 @@ Simple projector creation and modification for [Blender](https://www.blender.org
 I'm interested and open to suggestions. Let me know how you use the add-on and how it could improve. Open an issue or message me.
 
 P.S. Germans like to call a projector, a beamer.
+
+# Blender Startup Location
+..\AppData\Roaming\Blender Foundation\Blender\..\config\startup.blend

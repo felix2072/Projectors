@@ -42,9 +42,9 @@ RESOLUTIONS = [
     # 1:1 aspect ratio
     ('1000x1000', 'Square (1000x1000) 1:1', '', 13),
     # 1:2 aspect ratio
-    ('1000x2000', 'Landscape (1000x2000) 1:2', '', 14),
+    ('1000x2000', 'Portrait (1000x2000) 1:2', '', 14),
     # 2:1 aspect ratio
-    ('2000x1000', 'Portrait (2000x1000) 2:1', '', 15)
+    ('2000x1000', 'Landscape (2000x1000) 2:1', '', 15)
 ]
 
 PROJECTED_OUTPUTS = [(Textures.CHECKER.value, 'Checker', '', 1),
@@ -321,25 +321,31 @@ def update_lens_shift(proj_settings, context):
     projector = get_projector(context)
     h_shift = proj_settings.get('h_shift', 0.0) / 100
     v_shift = proj_settings.get('v_shift', 0.0) / 100
-    throw_ratio = proj_settings.get('throw_ratio')
+    throw_ratio = proj_settings.throw_ratio
+    focus_distance = proj_settings.focus_distance
 
     w, h = get_resolution(proj_settings, context)
-    v_shift_factor = h/w*v_shift
+    h_shift_factor = h_shift / throw_ratio*focus_distance*-1
+    #v_shift_factor = h/w*v_shift
+    v_shift_factor = h/w*v_shift / throw_ratio*focus_distance*-1
+    h_shift_factor = h_shift*-1
+    v_shift_factor = v_shift*-1
+
 
     # Update the properties of the camera.
     cam = projector
-    cam.data.shift_x = h_shift
+    cam.data.shift_x = h_shift_factor
     cam.data.shift_y = v_shift_factor
 
     # Update spotlight node setup.
     spot = projector.children[get_child_ID_by_type(projector.children,'LIGHT')]
     nodes = spot.data.node_tree.nodes['Group'].node_tree.nodes
     if bpy.app.version < (2, 81):
-        nodes['Mapping.001'].translation[0] = h_shift / throw_ratio
-        nodes['Mapping.001'].translation[1] = v_shift_factor / throw_ratio
+        nodes['Mapping.001'].translation[0] = h_shift_factor
+        nodes['Mapping.001'].translation[1] = v_shift_factor
     else:
-        nodes['Mapping.001'].inputs[1].default_value[0] = h_shift / throw_ratio
-        nodes['Mapping.001'].inputs[1].default_value[1] = v_shift_factor / throw_ratio
+        nodes['Mapping.001'].inputs[1].default_value[0] = h_shift_factor
+        nodes['Mapping.001'].inputs[1].default_value[1] = v_shift_factor
     update_projection_helper(proj_settings, context)
 
 def update_projection_by_width(proj_settings, context):
@@ -360,23 +366,23 @@ def update_projection_by_diagonal(proj_settings, context):
 def update_projector_width(proj_settings, context):
     projector = get_projector(context)
     projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
-    projector_cube.dimensions[0] = proj_settings.projector_w*0.01
+    projector_cube.dimensions[0] = proj_settings.projector_w
 
 def update_projector_height(proj_settings, context):
     projector = get_projector(context)
     projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
-    projector_cube.dimensions[1] = proj_settings.projector_h*0.01
+    projector_cube.dimensions[1] = proj_settings.projector_h
 
 def update_projector_depth(proj_settings, context):
     projector = get_projector(context)
     projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
-    projector_cube.dimensions[2] = proj_settings.projector_d*0.01
+    projector_cube.dimensions[2] = proj_settings.projector_d
     projector_cube.location[2] = projector_cube.dimensions[2]/2
 
 def update_projector_dimensions(proj_settings, context):
     projector = get_projector(context)
     projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
-    projector_cube.scale = (proj_settings.projector_w*0.01,proj_settings.projector_h*0.01,proj_settings.projector_d*0.01)
+    projector_cube.scale = (proj_settings.projector_w,proj_settings.projector_h,proj_settings.projector_d)
     projector_cube.location[2] = projector_cube.dimensions[2]/2
 
 def update_resolution(proj_settings, context):
@@ -436,15 +442,11 @@ def update_projection_helper(proj_settings, context):
 
     throw_ratio = proj_settings.throw_ratio
     focus_distance = proj_settings.focus_distance
-    resolution = proj_settings.resolution
-    cut = resolution.index('x')
-    w = float(proj_settings.resolution[0:cut])
-    h = float(proj_settings.resolution[cut+1:])
     factor = focus_distance*1/throw_ratio/2
     
     w, h = get_resolution(proj_settings, context)
     h_shift = proj_settings.get('h_shift', 0.0) / 100
-    h_shift_factor = h_shift*focus_distance
+    h_shift_factor = h_shift / throw_ratio*focus_distance
     v_shift = proj_settings.get('v_shift', 0.0) / 100
     v_shift_factor = h/w*v_shift / throw_ratio*focus_distance
 
@@ -743,9 +745,9 @@ def init_projector(proj_settings, context):
     proj_settings.v_shift = 0.0
     proj_settings.h_shift = 0.0
     proj_settings.focus_distance = 1.0
-    proj_settings.projector_w = 52.0
-    proj_settings.projector_h = 14.0
-    proj_settings.projector_d = 48.0
+    proj_settings.projector_w = .52
+    proj_settings.projector_h = .14
+    proj_settings.projector_d = .48
     proj_settings.projected_texture = Textures.CHECKER.value
     proj_settings.projected_color = random_color()
     proj_settings.resolution = '1920x1080'
@@ -884,20 +886,22 @@ class ProjectorSettings(bpy.types.PropertyGroup):
     projector_w: bpy.props.FloatProperty(
         name="Projector Width",
         description="Set the width of the projector",
-        soft_min=0, soft_max=100,
-        update=update_projector_width) # type: ignore
+        soft_min=0.1, soft_max=1,
+        update=update_projector_width,
+        subtype='DISTANCE',
+        unit='LENGTH') # type: ignore
 
     projector_h: bpy.props.FloatProperty(
         name="Projector Height",
         description="Set the height of the projector",
-        soft_min=0, soft_max=50,
+        soft_min=0.1, soft_max=1,
         update=update_projector_height,
         subtype='DISTANCE') # type: ignore
     
     projector_d: bpy.props.FloatProperty(
         name="Projector Depth",
         description="Set the depth of the projector",
-        soft_min=0, soft_max=100,
+        soft_min=0.1, soft_max=1,
         update=update_projector_depth,
         subtype='DISTANCE') # type: ignore
     
