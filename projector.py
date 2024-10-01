@@ -52,9 +52,9 @@ PROJECTED_OUTPUTS = [(Textures.CHECKER.value, 'Checker', '', 1),
                      (Textures.CUSTOM_TEXTURE.value, 'Custom Texture', '', 3)]
 
 
-class PROJECTORFORK_OT_change_color_randomly_fork(Operator):
+class PROJECTOR_OT_change_color_randomly(Operator):
     """ Randomly change the color of the projected checker texture."""
-    bl_idname = 'projectorfork.change_color'
+    bl_idname = 'projector.change_color'
     bl_label = 'Change color of projection checker texture'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -600,7 +600,7 @@ def create_pixel_grid_node_group():
     return node_group
     
 
-def create_projector_fork(context):
+def create_projector(context):
     """
     Create a new projector composed out of a camera (parent obj) and a spotlight (child not intended for user interaction).
     The camera is the object intended for the user to manipulate and custom properties are stored there.
@@ -763,9 +763,9 @@ def init_projector(proj_settings, context):
     update_projector_dimensions(proj_settings, context)
 
 
-class PROJECTORFORK_OT_create_projector_fork(Operator):
+class PROJECTOR_OT_create_projector(Operator):
     """ Create Projector """
-    bl_idname = 'projectorfork.create'
+    bl_idname = 'projector.create'
     bl_label = 'Create a new Projector'
     bl_options = {'REGISTER', 'UNDO'}
     
@@ -774,7 +774,7 @@ class PROJECTORFORK_OT_create_projector_fork(Operator):
         return context.mode == 'OBJECT'
 
     def execute(self, context):
-        projector = create_projector_fork(context)
+        projector = create_projector(context)
         init_projector(projector.proj_settings, context)
         return {'FINISHED'}
 
@@ -805,9 +805,9 @@ def update_projected_texture(proj_settings, context):
             custom_tex_node.outputs[0], emission_node.inputs[0])
 
 
-class PROJECTORFORK_OT_delete_projector_fork(Operator):
+class PROJECTOR_OT_delete_projector(Operator):
     """Delete Projector"""
-    bl_idname = 'projectorfork.delete'
+    bl_idname = 'projector.delete'
     bl_label = 'Delete Projector'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -825,7 +825,7 @@ class PROJECTORFORK_OT_delete_projector_fork(Operator):
         return {'FINISHED'}
 
 
-class ProjectorForkSettings(bpy.types.PropertyGroup):
+class ProjectorSettings(bpy.types.PropertyGroup):
     throw_ratio: bpy.props.FloatProperty(
         name="Throw Ratio",
         soft_min=0.1, soft_max=5,
@@ -930,16 +930,16 @@ class ProjectorForkSettings(bpy.types.PropertyGroup):
 
 
 def register():
-    bpy.utils.register_class(ProjectorForkSettings)
-    bpy.utils.register_class(PROJECTORFORK_OT_create_projector_fork)
-    bpy.utils.register_class(PROJECTORFORK_OT_delete_projector_fork)
-    bpy.utils.register_class(PROJECTORFORK_OT_change_color_randomly_fork)
+    bpy.utils.register_class(ProjectorSettings)
+    bpy.utils.register_class(PROJECTOR_OT_create_projector)
+    bpy.utils.register_class(PROJECTOR_OT_delete_projector)
+    bpy.utils.register_class(PROJECTOR_OT_change_color_randomly)
     bpy.types.Object.proj_settings = bpy.props.PointerProperty(
-        type=ProjectorForkSettings)
+        type=ProjectorSettings)
 
 
 def unregister():
-    bpy.utils.unregister_class(PROJECTORFORK_OT_change_color_randomly_fork)
-    bpy.utils.unregister_class(PROJECTORFORK_OT_delete_projector_fork)
-    bpy.utils.unregister_class(PROJECTORFORK_OT_create_projector_fork)
-    bpy.utils.unregister_class(ProjectorForkSettings)
+    bpy.utils.unregister_class(PROJECTOR_OT_change_color_randomly)
+    bpy.utils.unregister_class(PROJECTOR_OT_delete_projector)
+    bpy.utils.unregister_class(PROJECTOR_OT_create_projector)
+    bpy.utils.unregister_class(ProjectorSettings)

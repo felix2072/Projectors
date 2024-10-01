@@ -1,16 +1,16 @@
 from .helper import get_projectors, get_child_ID_by_type, get_child_ID_by_name
-from .projectorfork import RESOLUTIONS, Textures
+from .projector import RESOLUTIONS, Textures
 
 import bpy
 from bpy.types import Panel, PropertyGroup, UIList, Operator
 
 
-class PROJECTORFORK_PT_projector_settings_fork(Panel):
-    bl_idname = 'OBJECT_PT_projectorfork_n_panel'
-    bl_label = 'ProjectorFork'
+class PROJECTOR_PT_projector_settings(Panel):
+    bl_idname = 'OBJECT_PT_projector_n_panel'
+    bl_label = 'Projector'
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "ProjectorFork"
+    bl_category = "Projector"
 
     def draw(self, context):
         layout = self.layout
@@ -18,15 +18,15 @@ class PROJECTORFORK_PT_projector_settings_fork(Panel):
         layout.use_property_decorate = False
 
         row = layout.row(align=True)
-        row.operator('projectorfork.create',
+        row.operator('projector.create',
                      icon='ADD', text="New")
-        row.operator('projectorfork.delete',
+        row.operator('projector.delete',
                      text='Remove', icon='REMOVE')
 
         if context.scene.render.engine == 'BLENDER_EEVEE':
             box = layout.box()
             box.label(text='Image Projection only works in Cycles.', icon='ERROR')
-            box.operator('projectorfork.switch_to_cycles')
+            box.operator('projector.switch_to_cycles')
 
         selected_projectors = get_projectors(context, only_selected=True)
         if len(selected_projectors) == 1:
@@ -83,9 +83,9 @@ class PROJECTORFORK_PT_projector_settings_fork(Panel):
                 box.template_image(node, 'image', node.image_user, compact=False)
 
 
-class PROJECTORFORK_PT_projected_color_fork(Panel):
+class PROJECTOR_PT_projected_color(Panel):
     bl_label = "Projected Color"
-    bl_parent_id = "OBJECT_PT_projectorfork_n_panel"
+    bl_parent_id = "OBJECT_PT_projector_n_panel"
     bl_option = {'DEFAULT_CLOSED'}
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -103,18 +103,18 @@ class PROJECTORFORK_PT_projected_color_fork(Panel):
         col = layout.column()
         col.use_property_split = True
         col.prop(projector.proj_settings, 'projected_color', text='Color')
-        col.operator('projectorfork.change_color',
+        col.operator('projector.change_color',
                      icon='MODIFIER_ON', text='Random Color')
 
 
 def append_to_add_menu(self, context):
-    self.layout.operator('projectorfork.create',
-                         text='ProjectorFork', icon='CAMERA_DATA')
+    self.layout.operator('projector.create',
+                         text='Projector', icon='CAMERA_DATA')
 
 
 def register():
-    bpy.utils.register_class(PROJECTORFORK_PT_projector_settings_fork)
-    bpy.utils.register_class(PROJECTORFORK_PT_projected_color_fork)
+    bpy.utils.register_class(PROJECTOR_PT_projector_settings)
+    bpy.utils.register_class(PROJECTOR_PT_projected_color)
     # Register create  in the blender add menu.
     bpy.types.VIEW3D_MT_light_add.append(append_to_add_menu)
 
@@ -122,5 +122,5 @@ def register():
 def unregister():
     # Register create in the blender add menu.
     bpy.types.VIEW3D_MT_light_add.remove(append_to_add_menu)
-    bpy.utils.unregister_class(PROJECTORFORK_PT_projected_color_fork)
-    bpy.utils.unregister_class(PROJECTORFORK_PT_projector_settings_fork)
+    bpy.utils.unregister_class(PROJECTOR_PT_projected_color)
+    bpy.utils.unregister_class(PROJECTOR_PT_projector_settings)

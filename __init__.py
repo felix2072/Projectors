@@ -1,12 +1,12 @@
-from . import uiFork
-from . import projectorfork
-from . import operatorsFork
+from . import ui
+from . import projector
+from . import operators
 
 bl_info = {
-    "name": "ProjectorFork",
+    "name": "Projector",
     "author": "Jonas Schell",
     "description": "Easy Projector creation and modification.",
-    "blender": (4, 2, 1),
+    "blender": (2, 81, 0),
     "version": (2024, 3, 0),
     "location": "3D Viewport > Add > Light > ProjectorFork",
     "category": "Lighting",
@@ -16,12 +16,12 @@ bl_info = {
 
 
 def register():
-    projectorfork.register()
-    operatorsFork.register()
-    uiFork.register()
+    projector.register()
+    operators.register()
+    ui.register()
 
 
 def unregister():
-    uiFork.unregister()
-    operatorsFork.unregister()
-    projectorfork.unregister()
+    ui.unregister()
+    operators.unregister()
+    projector.unregister()

@@ -2,9 +2,9 @@ import bpy
 from bpy.types import Operator
 
 
-class PROJECTORFORK_OT_switch_to_cycles_fork(Operator):
+class PROJECTOR_OT_switch_to_cycles(Operator):
     """ Change the render engin to cycles. """
-    bl_idname = 'projectorfork.switch_to_cycles'
+    bl_idname = 'projector.switch_to_cycles'
     bl_label = ' Change Render Engine to Cycles. '
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -14,8 +14,8 @@ class PROJECTORFORK_OT_switch_to_cycles_fork(Operator):
 
 
 def register():
-    bpy.utils.register_class(PROJECTORFORK_OT_switch_to_cycles_fork)
+    bpy.utils.register_class(PROJECTOR_OT_switch_to_cycles)
 
 
 def unregister():
-    bpy.utils.unregister_class(PROJECTORFORK_OT_switch_to_cycles_fork)
+    bpy.utils.unregister_class(PROJECTOR_OT_switch_to_cycles)
