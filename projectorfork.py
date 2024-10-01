@@ -628,7 +628,7 @@ def create_projector_fork(context):
                               location=(0, 0, 0),
                               rotation=(0, 0, 0))
     cam = context.object
-    cam.name = 'Projector'
+    cam.name = 'Projector_Camera.001'
     cam.data.lens_unit = 'MILLIMETERS'
     cam.data.sensor_width = 10
     cam.data.display_size = 0.01
@@ -730,7 +730,7 @@ def create_projector_fork(context):
     bpy.context.view_layer.objects.active = cam
     
     bpy.ops.object.select_all(action='DESELECT')
-    bpy.data.objects["Projector"].select_set(True)
+    bpy.data.objects[cam.name].select_set(True)
     cam = context.object
     return cam
 
