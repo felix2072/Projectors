@@ -405,9 +405,9 @@ def update_checker_color(proj_settings, context):
     nodes['Checker Texture'].inputs['Color2'].default_value = [c.r, c.g, c.b, 1]
     projector_cube = projector.children[get_child_ID_by_name(projector.children,'Cube')]
     projector_cube.material_slots[0].material.diffuse_color = [c.r, c.g, c.b, 0.5]
-    for i in range(4):
-        projector_plane = projector.children[get_child_ID_by_name(projector.children,'Cube')]
-        projector_cube.material_slots[0].material.diffuse_color = [c.r, c.g, c.b, 0.5]
+    for i in range(2):
+        projector_plane = projector.children[get_child_ID_by_name(projector.children,'Plane_' + str(i))]
+        projector_plane.material_slots[0].material.diffuse_color = [c.r, c.g, c.b, 0.5]
 
 
 
@@ -792,12 +792,8 @@ def create_projector(context):
     projector_cube.material_slots[0].link = 'OBJECT'
     projector_cube_mat = bpy.data.materials.new("Projector_Cube_Mat")
     projector_cube.material_slots[0].material = projector_cube_mat
-    
-    """create_shape_from_verts("Projector_HelperPlane")
-    sceneObjects = bpy.context.scene.objects
-    HelperPlane = sceneObjects[get_child_ID_by_name(sceneObjects,'HelperPlane')]
-    HelperPlane.parent = projector_cube"""
 
+    Projector_HelperPlane_mat = newShader(cam.name + "_HelperPlaneMat", "principled", 1, 1, 1)
     for i in range(4):
         bpy.ops.mesh.primitive_plane_add()
         Projector_HelperPlane = bpy.context.object
@@ -805,10 +801,13 @@ def create_projector(context):
         Projector_HelperPlane.dimensions = (1,1,1)
         Projector_HelperPlane.visible_shadow = False
         Projector_HelperPlane.parent = cam  
-        bpy.ops.object.material_slot_add()
+
+        """bpy.ops.object.material_slot_add()
         Projector_HelperPlane.material_slots[0].link = 'OBJECT'
         Projector_HelperPlane_mat = bpy.data.materials.new("Projector_HelperPlane_Mat")
-        Projector_HelperPlane.material_slots[0].material = Projector_HelperPlane_mat
+        Projector_HelperPlane.material_slots[0].material = Projector_HelperPlane_mat"""
+
+        Projector_HelperPlane.data.materials.append(Projector_HelperPlane_mat)
 
     bpy.context.view_layer.objects.active = cam
     
@@ -817,6 +816,51 @@ def create_projector(context):
     cam = context.object
     return cam
 
+def newMaterial(id):
+
+    mat = bpy.data.materials.get(id)
+
+    if mat is None:
+        mat = bpy.data.materials.new(name=id)
+
+    mat.use_nodes = True
+
+    if mat.node_tree:
+        mat.node_tree.links.clear()
+        mat.node_tree.nodes.clear()
+
+    return mat
+
+def newShader(id, type, r, g, b):
+
+    mat = newMaterial(id)
+
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    output = nodes.new(type='ShaderNodeOutputMaterial')
+
+    if type == "principled":
+        shader = nodes.new(type='ShaderNodeBsdfPrincipled')
+        nodes["Principled BSDF"].inputs[0].default_value = (r, g, b, 1)
+        nodes["Principled BSDF"].inputs[4].default_value = (0.5)
+
+    if type == "diffuse":
+        shader = nodes.new(type='ShaderNodeBsdfDiffuse')
+        nodes["Diffuse BSDF"].inputs[0].default_value = (r, g, b, 1)
+
+    elif type == "emission":
+        shader = nodes.new(type='ShaderNodeEmission')
+        nodes["Emission"].inputs[0].default_value = (r, g, b, 1)
+        nodes["Emission"].inputs[1].default_value = 1
+
+    elif type == "glossy":
+        shader = nodes.new(type='ShaderNodeBsdfGlossy')
+        nodes["Glossy BSDF"].inputs[0].default_value = (r, g, b, 1)
+        nodes["Glossy BSDF"].inputs[1].default_value = 0
+
+    links.new(shader.outputs[0], output.inputs[0])
+
+    return mat
 
 def init_projector(proj_settings, context):
     # # Add custom properties to store projector settings on the camera obj.
