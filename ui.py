@@ -74,6 +74,7 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             # Pixel Grid
             box.prop(proj_settings, 'show_pixel_grid')
+            box.prop(proj_settings, 'show_helper_lines')
 
             # Custom Texture
             if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value:

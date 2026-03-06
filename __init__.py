@@ -4,7 +4,7 @@ from . import operators
 
 bl_info = {
     "name": "Projector",
-    "author": "Jonas Schell",
+    "author": "Jonas Schell / Felix Worseck",
     "description": "Easy Projector creation and modification.",
     "blender": (2, 81, 0),
     "version": (2024, 3, 0),

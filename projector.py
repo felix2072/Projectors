@@ -888,6 +888,7 @@ def init_projector(proj_settings, context):
     update_projection_helper(proj_settings, context)
     update_projector_visibility(context)
     update_projector_dimensions(proj_settings, context)
+    update_helper_lines_visibility(proj_settings, context)
 
 
 class PROJECTOR_OT_create_projector(Operator):
@@ -904,6 +905,22 @@ class PROJECTOR_OT_create_projector(Operator):
         projector = create_projector(context)
         init_projector(projector.proj_settings, context)
         return {'FINISHED'}
+
+
+def update_helper_lines_visibility(proj_settings, context):
+    """ Toggle visibility of helper line and planes. """
+    projector = get_projector(context)
+    
+    # Toggle HelperLine visibility
+    helper_line = projector.children[get_child_ID_by_name(projector.children, 'HelperLine')]
+    helper_line.hide_viewport = not proj_settings.show_helper_lines
+    helper_line.hide_render = not proj_settings.show_helper_lines
+    
+    # Toggle HelperPlane visibility
+    for i in range(4):
+        helper_plane = projector.children[get_child_ID_by_name(projector.children, 'HelperPlane_' + str(i))]
+        helper_plane.hide_viewport = not proj_settings.show_helper_lines
+        helper_plane.hide_render = not proj_settings.show_helper_lines
 
 
 def update_projected_texture(proj_settings, context):
@@ -1056,6 +1073,12 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         description="When checked the image is divided into a pixel grid with the dimensions of the image resolution.",
         default=False,
         update=update_pixel_grid) # type: ignore
+
+    show_helper_lines: bpy.props.BoolProperty(
+        name="Show Helper Lines",
+        description="When checked the helper lines and planes are visible in the viewport.",
+        default=Truep,
+        update=update_helper_lines_visibility) # type: ignore
 
 
 def register():
