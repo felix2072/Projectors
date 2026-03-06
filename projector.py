@@ -1077,7 +1077,7 @@ class ProjectorSettings(bpy.types.PropertyGroup):
     show_helper_lines: bpy.props.BoolProperty(
         name="Show Helper Lines",
         description="When checked the helper lines and planes are visible in the viewport.",
-        default=Truep,
+        default=True,
         update=update_helper_lines_visibility) # type: ignore
 
 
