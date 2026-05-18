@@ -1,3 +1,4 @@
+_projection_update_in_progress = False
 import bpy
 
 from .helper import (
@@ -87,15 +88,61 @@ def update_lens_shift(proj_settings, context):
 
 
 def update_projection_by_width(proj_settings, context):
-    _ = proj_settings.w_projection
+    # Wenn Breite geändert wird, Höhe und Diagonale anpassen
+    w = proj_settings.w_projection
+    res_w, res_h = get_resolution(proj_settings, context)
+    aspect = res_h / res_w if res_w != 0 else 1.0
+    h = w * aspect
+    d = (w ** 2 + h ** 2) ** 0.5
+    proj_settings['h_projection'] = h
+    proj_settings['d_projection'] = d
+    # throw_ratio anpassen
+    global _projection_update_in_progress
+    if not _projection_update_in_progress:
+        _projection_update_in_progress = True
+        if w > 0:
+            proj_settings['throw_ratio'] = proj_settings.focus_distance / w
+            update_throw_ratio(proj_settings, context)
+        _projection_update_in_progress = False
 
 
 def update_projection_by_height(proj_settings, context):
-    _ = proj_settings.h_projection
+    # Wenn Höhe geändert wird, Breite und Diagonale anpassen
+    h = proj_settings.h_projection
+    res_w, res_h = get_resolution(proj_settings, context)
+    aspect = res_w / res_h if res_h != 0 else 1.0
+    w = h * aspect
+    d = (w ** 2 + h ** 2) ** 0.5
+    proj_settings['w_projection'] = w
+    proj_settings['d_projection'] = d
+    # throw_ratio anpassen
+    global _projection_update_in_progress
+    if not _projection_update_in_progress:
+        _projection_update_in_progress = True
+        if w > 0:
+            proj_settings['throw_ratio'] = proj_settings.focus_distance / w
+            update_throw_ratio(proj_settings, context)
+        _projection_update_in_progress = False
 
 
 def update_projection_by_diagonal(proj_settings, context):
-    _ = proj_settings.d_projection
+    # Wenn Diagonale geändert wird, Breite und Höhe anpassen
+    d = proj_settings.d_projection
+    res_w, res_h = get_resolution(proj_settings, context)
+    aspect = res_w / res_h if res_h != 0 else 1.0
+    # Berechne w und h so, dass sie das Seitenverhältnis und die Diagonale erfüllen
+    h = d / ((aspect ** 2 + 1) ** 0.5)
+    w = aspect * h
+    proj_settings['w_projection'] = w
+    proj_settings['h_projection'] = h
+    # throw_ratio anpassen
+    global _projection_update_in_progress
+    if not _projection_update_in_progress:
+        _projection_update_in_progress = True
+        if w > 0:
+            proj_settings['throw_ratio'] = proj_settings.focus_distance / w
+            update_throw_ratio(proj_settings, context)
+        _projection_update_in_progress = False
 
 
 def update_projector_width(proj_settings, context):
