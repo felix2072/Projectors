@@ -87,66 +87,65 @@ def update_lens_shift(proj_settings, context):
     update_projection_helper(proj_settings, context)
 
 
-def update_projection_by_width(proj_settings, context):
-    # Wenn Breite geändert wird, Höhe und Diagonale anpassen
-    w = proj_settings.w_projection
-    res_w, res_h = get_resolution(proj_settings, context)
-    aspect = res_h / res_w if res_w != 0 else 1.0
-    h = w * aspect
-    d = (w ** 2 + h ** 2) ** 0.5
-    proj_settings['h_projection'] = h
-    proj_settings['d_projection'] = d
-    # throw_ratio anpassen
-    global _projection_update_in_progress
-    if not _projection_update_in_progress:
-        _projection_update_in_progress = True
-        if w > 0:
-            proj_settings['throw_ratio'] = proj_settings.focus_distance / w
-            update_throw_ratio(proj_settings, context)
-        _projection_update_in_progress = False
 
+def update_projection_by_dimension(proj_settings, context, changed):
+    """
+    Allgemeine Update-Funktion für Projektionseigenschaften.
+    changed: 'width', 'height' oder 'diagonal'
+    """
+    global _projection_update_in_progress
+    if _projection_update_in_progress:
+        return
+    _projection_update_in_progress = True
+
+    res_w, res_h = get_resolution(proj_settings, context)
+    # Standardwerte falls Division durch 0
+    aspect_w_h = res_w / res_h if res_h != 0 else 1.0
+    aspect_h_w = res_h / res_w if res_w != 0 else 1.0
+
+    if changed == 'width':
+        w = proj_settings.w_projection
+        h = w * aspect_h_w
+        d = (w ** 2 + h ** 2) ** 0.5
+        proj_settings['h_projection'] = h
+        proj_settings['d_projection'] = d
+    elif changed == 'height':
+        h = proj_settings.h_projection
+        w = h * aspect_w_h
+        d = (w ** 2 + h ** 2) ** 0.5
+        proj_settings['w_projection'] = w
+        proj_settings['d_projection'] = d
+    elif changed == 'diagonal':
+        d = proj_settings.d_projection
+        # Berechne w und h so, dass sie das Seitenverhältnis und die Diagonale erfüllen
+        h = d / ((aspect_w_h ** 2 + 1) ** 0.5)
+        w = aspect_w_h * h
+        proj_settings['w_projection'] = w
+        proj_settings['h_projection'] = h
+    else:
+        _projection_update_in_progress = False
+        return
+
+    # throw_ratio anpassen
+    if w > 0:
+        proj_settings['throw_ratio'] = proj_settings.focus_distance / w
+        update_throw_ratio(proj_settings, context)
+
+    _projection_update_in_progress = False
+
+
+# Wrapper für Blender Property-Callbacks
+def update_projection_by_width(proj_settings, context):
+    update_projection_by_dimension(proj_settings, context, 'width')
 
 def update_projection_by_height(proj_settings, context):
-    # Wenn Höhe geändert wird, Breite und Diagonale anpassen
-    h = proj_settings.h_projection
-    res_w, res_h = get_resolution(proj_settings, context)
-    aspect = res_w / res_h if res_h != 0 else 1.0
-    w = h * aspect
-    d = (w ** 2 + h ** 2) ** 0.5
-    proj_settings['w_projection'] = w
-    proj_settings['d_projection'] = d
-    # throw_ratio anpassen
-    global _projection_update_in_progress
-    if not _projection_update_in_progress:
-        _projection_update_in_progress = True
-        if w > 0:
-            proj_settings['throw_ratio'] = proj_settings.focus_distance / w
-            update_throw_ratio(proj_settings, context)
-        _projection_update_in_progress = False
-
+    update_projection_by_dimension(proj_settings, context, 'height')
 
 def update_projection_by_diagonal(proj_settings, context):
-    # Wenn Diagonale geändert wird, Breite und Höhe anpassen
-    d = proj_settings.d_projection
-    res_w, res_h = get_resolution(proj_settings, context)
-    aspect = res_w / res_h if res_h != 0 else 1.0
-    # Berechne w und h so, dass sie das Seitenverhältnis und die Diagonale erfüllen
-    h = d / ((aspect ** 2 + 1) ** 0.5)
-    w = aspect * h
-    proj_settings['w_projection'] = w
-    proj_settings['h_projection'] = h
-    # throw_ratio anpassen
-    global _projection_update_in_progress
-    if not _projection_update_in_progress:
-        _projection_update_in_progress = True
-        if w > 0:
-            proj_settings['throw_ratio'] = proj_settings.focus_distance / w
-            update_throw_ratio(proj_settings, context)
-        _projection_update_in_progress = False
+    update_projection_by_dimension(proj_settings, context, 'diagonal')
 
 
 def update_projector_width(proj_settings, context):
-    print("[DEBUG] update_projector_width called", flush=True)
     projector = _get_projector_from_settings(proj_settings, context)
     if projector is None:
         return
@@ -154,7 +153,6 @@ def update_projector_width(proj_settings, context):
 
 
 def update_projector_height(proj_settings, context):
-    print("[DEBUG] update_projector_height called", flush=True)
     projector = _get_projector_from_settings(proj_settings, context)
     if projector is None:
         return
@@ -162,7 +160,6 @@ def update_projector_height(proj_settings, context):
 
 
 def update_projector_depth(proj_settings, context):
-    print("[DEBUG] update_projector_depth called", flush=True)
     projector = _get_projector_from_settings(proj_settings, context)
     if projector is None:
         return
@@ -175,7 +172,6 @@ def update_projector_dimensions(proj_settings, context):
         return
     projector_cube = projector.children[get_child_ID_by_name(projector.children, 'Cube')]
     # Keep initialization behavior consistent with slider callbacks.
-    print(f"[DEBUG] update_projector_dimensions: setting dimensions to ({proj_settings.projector_w}, {proj_settings.projector_h}, {proj_settings.projector_d})", flush=True)
     
     projector_cube.dimensions = (
     proj_settings.projector_w,

@@ -26,6 +26,32 @@ from .projector_updates import (
     update_projection_by_height,
     update_projection_by_width,
     update_projection_helper,
+    update_projector_depth,
+    update_projector_dimensions,
+    update_projector_height,
+    update_projector_visibility,
+    update_projector_width,
+    update_resolution,
+    update_throw_ratio,
+)
+
+# Sichtbarkeit des Projector_Cube steuern
+def update_projector_cube_visibility(proj_settings, context):
+    """
+    Zeigt oder versteckt den Projector_Cube je nach show_projector_cube Property.
+    """
+    from .helper import get_child_ID_by_name, get_projector
+    projector = get_projector(context)
+    if projector is None:
+        return
+    try:
+        cube = projector.children[get_child_ID_by_name(projector.children, 'Cube')]
+    except Exception:
+        return
+    visible = proj_settings.show_projector_cube
+    cube.hide_viewport = not visible
+    cube.hide_render = not visible
+    update_projection_helper,
     update_projector_dimensions,
     update_projector_visibility,
     update_projector_width,
@@ -33,7 +59,6 @@ from .projector_updates import (
     update_projector_depth,
     update_resolution,
     update_throw_ratio,
-)
 
 
 class PROJECTOR_OT_change_color_randomly(Operator):
@@ -107,7 +132,8 @@ class ProjectorSettings(bpy.types.PropertyGroup):
     power: bpy.props.FloatProperty(
         name='Projector Power',
         soft_min=0.01,
-        soft_max=30,
+        soft_max=5000,
+        step=10,
         update=update_power,
         unit='POWER',
     )  # type: ignore
@@ -118,7 +144,6 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         soft_min=-100,
         soft_max=100,
         update=update_lens_shift,
-        subtype='PERCENTAGE',
     )  # type: ignore
 
     h_shift: bpy.props.FloatProperty(
@@ -127,7 +152,6 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         soft_min=-100,
         soft_max=100,
         update=update_lens_shift,
-        subtype='PERCENTAGE',
     )  # type: ignore
 
     focus_distance: bpy.props.FloatProperty(
@@ -233,6 +257,14 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         default=True,
         update=update_helper_lines_visibility,
     )  # type: ignore
+
+    show_projector_cube: bpy.props.BoolProperty(
+        name='Show Projector Cube',
+        description='When checked the projector cube is visible in the viewport.',
+        default=True,
+        update=update_projector_cube_visibility,
+    )  # type: ignore
+    
 
 
 def register():

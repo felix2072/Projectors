@@ -43,8 +43,8 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             # Lens Shift
             col = box.column(align=True)
-            col.prop(proj_settings, 'v_shift', text='Vertical Shift')
-            col.prop(proj_settings, 'h_shift', text='Horizontal Shift')
+            col.prop(proj_settings, 'v_shift', text='Vertical Shift', slider=True)
+            col.prop(proj_settings, 'h_shift', text='Horizontal Shift', slider=True)
 
             box.prop(data=proj_settings, property='focus_distance', text='Focus Distance',slider=True)
 
@@ -75,6 +75,7 @@ class PROJECTOR_PT_projector_settings(Panel):
             # Pixel Grid
             box.prop(proj_settings, 'show_pixel_grid')
             box.prop(proj_settings, 'show_helper_lines')
+            box.prop(proj_settings, 'show_projector_cube')
 
             # Custom Texture
             if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value:
