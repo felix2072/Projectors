@@ -146,24 +146,27 @@ def update_projection_by_diagonal(proj_settings, context):
 
 
 def update_projector_width(proj_settings, context):
+    print("[DEBUG] update_projector_width called", flush=True)
     projector = _get_projector_from_settings(proj_settings, context)
     if projector is None:
         return
-    # ...existing code...
+    update_projector_dimensions(proj_settings, context)
 
 
 def update_projector_height(proj_settings, context):
+    print("[DEBUG] update_projector_height called", flush=True)
     projector = _get_projector_from_settings(proj_settings, context)
     if projector is None:
         return
-    # ...existing code...
+    update_projector_dimensions(proj_settings, context)
 
 
 def update_projector_depth(proj_settings, context):
+    print("[DEBUG] update_projector_depth called", flush=True)
     projector = _get_projector_from_settings(proj_settings, context)
     if projector is None:
         return
-    # ...existing code...
+    update_projector_dimensions(proj_settings, context)
 
 
 def update_projector_dimensions(proj_settings, context):
@@ -172,9 +175,13 @@ def update_projector_dimensions(proj_settings, context):
         return
     projector_cube = projector.children[get_child_ID_by_name(projector.children, 'Cube')]
     # Keep initialization behavior consistent with slider callbacks.
-    projector_cube.dimensions[0] = proj_settings.projector_w
-    projector_cube.dimensions[1] = proj_settings.projector_h
-    projector_cube.dimensions[2] = proj_settings.projector_d
+    print(f"[DEBUG] update_projector_dimensions: setting dimensions to ({proj_settings.projector_w}, {proj_settings.projector_h}, {proj_settings.projector_d})", flush=True)
+    
+    projector_cube.dimensions = (
+    proj_settings.projector_w,
+    proj_settings.projector_h,
+    proj_settings.projector_d,
+)
     projector_cube.location[2] = projector_cube.dimensions[2] / 2
 
 

@@ -26,11 +26,11 @@ from .projector_updates import (
     update_projection_by_height,
     update_projection_by_width,
     update_projection_helper,
-    update_projector_depth,
     update_projector_dimensions,
-    update_projector_height,
     update_projector_visibility,
     update_projector_width,
+    update_projector_height,
+    update_projector_depth,
     update_resolution,
     update_throw_ratio,
 )
