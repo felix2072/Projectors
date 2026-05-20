@@ -122,17 +122,33 @@ class PROJECTOR_OT_delete_projector(Operator):
 
 class ProjectorSettings(bpy.types.PropertyGroup):
 
-    def update_throw_ratio_limits(self, context):
+    # Generic clamp helper for min/max/val triplets
+    def clamp_property_with_min_max(self, context, prop_name, min_name, max_name):
+        min_val = getattr(self, min_name)
+        max_val = getattr(self, max_name)
         # Ensure min <= max
-        if self.min_throw_ratio > self.max_throw_ratio:
-            self.max_throw_ratio = self.min_throw_ratio
-        elif self.max_throw_ratio < self.min_throw_ratio:
-            self.min_throw_ratio = self.max_throw_ratio
-        # Clamp throw_ratio to new min/max
-        if self.throw_ratio < self.min_throw_ratio:
-            self.throw_ratio = self.min_throw_ratio
-        elif self.throw_ratio > self.max_throw_ratio:
-            self.throw_ratio = self.max_throw_ratio
+        if min_val > max_val:
+            setattr(self, max_name, min_val)
+            max_val = min_val
+        elif max_val < min_val:
+            setattr(self, min_name, max_val)
+            min_val = max_val
+        # Clamp value
+        val = getattr(self, prop_name)
+        if val < min_val:
+            setattr(self, prop_name, min_val)
+        elif val > max_val:
+            setattr(self, prop_name, max_val)
+
+    def update_throw_ratio_limits(self, context):
+        self.clamp_property_with_min_max(context, 'throw_ratio', 'min_throw_ratio', 'max_throw_ratio')
+
+    def update_v_shift_limits(self, context):
+        self.clamp_property_with_min_max(context, 'v_shift', 'min_v_shift', 'max_v_shift')
+
+    def update_h_shift_limits(self, context):
+        self.clamp_property_with_min_max(context, 'h_shift', 'min_h_shift', 'max_h_shift')
+
 
     min_throw_ratio: bpy.props.FloatProperty(
         name='Min Throw Ratio',
@@ -142,7 +158,6 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         max=7.0,
         update=update_throw_ratio_limits,
     )  # type: ignore
-
     max_throw_ratio: bpy.props.FloatProperty(
         name='Max Throw Ratio',
         description='Maximaler Wert für Throw Ratio',
@@ -152,13 +167,52 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         update=update_throw_ratio_limits,
     )  # type: ignore
 
+    min_v_shift: bpy.props.FloatProperty(
+        name='Min Vertical Shift',
+        description='Minimaler Wert für Vertical Shift',
+        default=-100.0,
+        min=-1000.0,
+        max=1000.0,
+        update=update_v_shift_limits,
+    )  # type: ignore
+    max_v_shift: bpy.props.FloatProperty(
+        name='Max Vertical Shift',
+        description='Maximaler Wert für Vertical Shift',
+        default=100.0,
+        min=-1000.0,
+        max=1000.0,
+        update=update_v_shift_limits,
+    )  # type: ignore
+
+    min_h_shift: bpy.props.FloatProperty(
+        name='Min Horizontal Shift',
+        description='Minimaler Wert für Horizontal Shift',
+        default=-100.0,
+        min=-1000.0,
+        max=1000.0,
+        update=update_h_shift_limits,
+    )  # type: ignore
+    max_h_shift: bpy.props.FloatProperty(
+        name='Max Horizontal Shift',
+        description='Maximaler Wert für Horizontal Shift',
+        default=100.0,
+        min=-1000.0,
+        max=1000.0,
+        update=update_h_shift_limits,
+    )  # type: ignore
+
+
     def clamp_throw_ratio(self, context):
-        # Clamp throw_ratio to min/max
-        if self.throw_ratio < self.min_throw_ratio:
-            self.throw_ratio = self.min_throw_ratio
-        elif self.throw_ratio > self.max_throw_ratio:
-            self.throw_ratio = self.max_throw_ratio
+        self.clamp_property_with_min_max(context, 'throw_ratio', 'min_throw_ratio', 'max_throw_ratio')
         update_throw_ratio(self, context)
+
+    def clamp_v_shift(self, context):
+        self.clamp_property_with_min_max(context, 'v_shift', 'min_v_shift', 'max_v_shift')
+        update_lens_shift(self, context)
+
+    def clamp_h_shift(self, context):
+        self.clamp_property_with_min_max(context, 'h_shift', 'min_h_shift', 'max_h_shift')
+        update_lens_shift(self, context)
 
     throw_ratio: bpy.props.FloatProperty(
         name='Throw Ratio',
@@ -166,6 +220,22 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         soft_max=8.0,  # Initialwert
         update=clamp_throw_ratio,
         subtype='FACTOR',
+    )  # type: ignore
+
+    v_shift: bpy.props.FloatProperty(
+        name='Vertical Shift',
+        description='Vertical Lens Shift',
+        soft_min=-100,
+        soft_max=100,
+        update=clamp_v_shift,
+    )  # type: ignore
+
+    h_shift: bpy.props.FloatProperty(
+        name='Horizontal Shift',
+        description='Horizontal Lens Shift',
+        soft_min=-100,
+        soft_max=100,
+        update=clamp_h_shift,
     )  # type: ignore
 
     power: bpy.props.FloatProperty(

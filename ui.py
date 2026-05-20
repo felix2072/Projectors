@@ -38,17 +38,24 @@ class PROJECTOR_PT_projector_settings(Panel):
             layout.label(text='Projector Settings:')
             box = layout.box()
 
-            row = box.row(align=True)
+            box.prop(proj_settings, 'power', text='Power')
+
+            lense = box.column(align=True, heading='')
+            row = lense.row(align=True)
             row.prop(proj_settings, 'throw_ratio', text='Throw Ratio', slider=True)
             row.prop(proj_settings, 'min_throw_ratio', text='Min')
             row.prop(proj_settings, 'max_throw_ratio', text='Max')
 
-            box.prop(proj_settings, 'power', text='Power')
-
             # Lens Shift
-            col = box.column(align=True)
-            col.prop(proj_settings, 'v_shift', text='Vertical Shift', slider=True)
-            col.prop(proj_settings, 'h_shift', text='Horizontal Shift', slider=True)
+            row = lense.row(align=True)
+            row.prop(proj_settings, 'v_shift', text='Vertical Shift', slider=True)
+            row.prop(proj_settings, 'min_v_shift', text='Min')
+            row.prop(proj_settings, 'max_v_shift', text='Max')
+
+            row = lense.row(align=True)
+            row.prop(proj_settings, 'h_shift', text='Horizontal Shift', slider=True)
+            row.prop(proj_settings, 'min_h_shift', text='Min')
+            row.prop(proj_settings, 'max_h_shift', text='Max')
 
             box.prop(data=proj_settings, property='focus_distance', text='Focus Distance',slider=True)
 
