@@ -73,8 +73,9 @@ def update_lens_shift(proj_settings, context):
     h_shift_factor = h_shift * -1
     v_shift_factor = v_shift * -1
 
-    projector.data.shift_x = h_shift_factor
-    projector.data.shift_y = v_shift_factor
+    res_w, res_h = get_resolution(proj_settings, context)
+    projector.data.shift_x = -h_shift_factor
+    projector.data.shift_y = -v_shift_factor*(res_h/res_w)
 
     spot = projector.children[get_child_ID_by_type(projector.children, 'LIGHT')]
     nodes = spot.data.node_tree.nodes['Group'].node_tree.nodes
