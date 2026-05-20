@@ -38,14 +38,28 @@ class PROJECTOR_PT_projector_settings(Panel):
             layout.label(text='Projector Settings:')
             box = layout.box()
 
+            res_row = box.row()
+            res_row.prop(proj_settings, 'resolution',
+                         text='Resolution', icon='MOD_LENGTH')
+            if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value and proj_settings.use_custom_texture_res:
+                res_row.active = False
+                res_row.enabled = False
+            else:
+                res_row.active = True
+                res_row.enabled = True
+            layout.prop(proj_settings,
+                        'projected_texture', text='Project')
+            # Projecton Size
+
             box.prop(proj_settings, 'power', text='Power')
 
-            lense = box.column(align=True, heading='')
-            row = lense.row(align=True)
+            #
+            row = box.row(align=True)
             row.prop(proj_settings, 'throw_ratio', text='Throw Ratio', slider=True)
             row.prop(proj_settings, 'min_throw_ratio', text='Min')
             row.prop(proj_settings, 'max_throw_ratio', text='Max')
 
+            lense = box.column(align=True, heading='')
             # Lens Shift
             row = lense.row(align=True)
             row.prop(proj_settings, 'v_shift', text='Vertical Shift', slider=True)
@@ -70,26 +84,13 @@ class PROJECTOR_PT_projector_settings(Panel):
             p_size.prop(proj_settings, 'projector_h', text='Projector Height',slider=True)
             p_size.prop(proj_settings, 'projector_d', text='Projector Depth',slider=True)
 
-            res_row = box.row()
-            res_row.prop(proj_settings, 'resolution',
-                         text='Resolution', icon='MOD_LENGTH')
-            if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value and proj_settings.use_custom_texture_res:
-                res_row.active = False
-                res_row.enabled = False
-            else:
-                res_row.active = True
-                res_row.enabled = True
-            layout.prop(proj_settings,
-                        'projected_texture', text='Project')
-            # Projecton Size
-
             # Pixel Grid
-            box.prop(proj_settings, 'show_pixel_grid')
 
             row = box.column(align=True)            
             row.prop(proj_settings, 'show_helper_lines', text='Helper Lines', icon='LIGHT_SPOT')
             row.prop(proj_settings, 'show_projector_cube', text='Projector Cube', icon='MESH_CUBE')
             row.prop(proj_settings, 'show_projector_spotlight', text='Spotlight', icon='OUTLINER_OB_LIGHT')
+            row.prop(proj_settings, 'show_pixel_grid', text='Pixel Grid', icon='TEXTURE_DATA')
 
             # Custom Texture
             if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value:
