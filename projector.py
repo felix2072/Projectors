@@ -252,19 +252,18 @@ class ProjectorSettings(bpy.types.PropertyGroup):
     )  # type: ignore
 
     show_helper_lines: bpy.props.BoolProperty(
-        name='Show Helper Lines',
+        name='Lines',
         description='When checked the helper lines and planes are visible in the viewport.',
         default=True,
         update=update_helper_lines_visibility,
     )  # type: ignore
 
     show_projector_cube: bpy.props.BoolProperty(
-        name='Show Projector Cube',
+        name='Cube',
         description='When checked the projector cube is visible in the viewport.',
         default=True,
         update=update_projector_cube_visibility,
     )  # type: ignore
-    
 
 
 def register():

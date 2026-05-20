@@ -35,7 +35,7 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             layout.separator()
 
-            layout.label(text='ProjectorFork Settings:')
+            layout.label(text='Projector Settings:')
             box = layout.box()
 
             box.prop(proj_settings, 'throw_ratio')
@@ -61,7 +61,7 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             res_row = box.row()
             res_row.prop(proj_settings, 'resolution',
-                         text='Resolution', icon='PRESET')
+                         text='Resolution', icon='MOD_LENGTH')
             if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value and proj_settings.use_custom_texture_res:
                 res_row.active = False
                 res_row.enabled = False
@@ -74,8 +74,20 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             # Pixel Grid
             box.prop(proj_settings, 'show_pixel_grid')
-            box.prop(proj_settings, 'show_helper_lines')
-            box.prop(proj_settings, 'show_projector_cube')
+
+            row = box.row(align=True)
+            row.prop(proj_settings, 'show_helper_lines', icon='VIS_SEL_11')
+            row.prop(proj_settings, 'show_projector_cube', icon='VIS_SEL_11')
+
+            # Spotlight Toggle Button
+            spot = None
+            for child in projector.children:
+                if child.type == 'LIGHT' and child.name == 'Projector_Spotlight':
+                    spot = child
+                    break
+            if spot:
+                icon = 'OUTLINER_OB_LIGHT' if not spot.hide_viewport else 'OUTLINER_DATA_LIGHT'
+                row.operator('projector.toggle_spotlight', text='', icon=icon)
 
             # Custom Texture
             if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value:
