@@ -121,11 +121,50 @@ class PROJECTOR_OT_delete_projector(Operator):
 
 
 class ProjectorSettings(bpy.types.PropertyGroup):
+
+    def update_throw_ratio_limits(self, context):
+        # Ensure min <= max
+        if self.min_throw_ratio > self.max_throw_ratio:
+            self.max_throw_ratio = self.min_throw_ratio
+        elif self.max_throw_ratio < self.min_throw_ratio:
+            self.min_throw_ratio = self.max_throw_ratio
+        # Clamp throw_ratio to new min/max
+        if self.throw_ratio < self.min_throw_ratio:
+            self.throw_ratio = self.min_throw_ratio
+        elif self.throw_ratio > self.max_throw_ratio:
+            self.throw_ratio = self.max_throw_ratio
+
+    min_throw_ratio: bpy.props.FloatProperty(
+        name='Min Throw Ratio',
+        description='Minimaler Wert für Throw Ratio',
+        default=0.1,
+        min=0.01,
+        max=7.0,
+        update=update_throw_ratio_limits,
+    )  # type: ignore
+
+    max_throw_ratio: bpy.props.FloatProperty(
+        name='Max Throw Ratio',
+        description='Maximaler Wert für Throw Ratio',
+        default=8.0,
+        min=0.05,
+        max=8.0,
+        update=update_throw_ratio_limits,
+    )  # type: ignore
+
+    def clamp_throw_ratio(self, context):
+        # Clamp throw_ratio to min/max
+        if self.throw_ratio < self.min_throw_ratio:
+            self.throw_ratio = self.min_throw_ratio
+        elif self.throw_ratio > self.max_throw_ratio:
+            self.throw_ratio = self.max_throw_ratio
+        update_throw_ratio(self, context)
+
     throw_ratio: bpy.props.FloatProperty(
         name='Throw Ratio',
-        soft_min=0.1,
-        soft_max=5,
-        update=update_throw_ratio,
+        soft_min=0.1,  # Initialwert
+        soft_max=8.0,  # Initialwert
+        update=clamp_throw_ratio,
         subtype='FACTOR',
     )  # type: ignore
 

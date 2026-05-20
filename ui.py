@@ -38,7 +38,11 @@ class PROJECTOR_PT_projector_settings(Panel):
             layout.label(text='Projector Settings:')
             box = layout.box()
 
-            box.prop(proj_settings, 'throw_ratio')
+            row = box.row(align=True)
+            row.prop(proj_settings, 'throw_ratio', text='Throw Ratio', slider=True)
+            row.prop(proj_settings, 'min_throw_ratio', text='Min')
+            row.prop(proj_settings, 'max_throw_ratio', text='Max')
+
             box.prop(proj_settings, 'power', text='Power')
 
             # Lens Shift
