@@ -253,17 +253,40 @@ class ProjectorSettings(bpy.types.PropertyGroup):
 
     show_helper_lines: bpy.props.BoolProperty(
         name='Lines',
-        description='When checked the helper lines and planes are visible in the viewport.',
+        description='Helper lines visible in the viewport and render',
         default=True,
         update=update_helper_lines_visibility,
     )  # type: ignore
 
     show_projector_cube: bpy.props.BoolProperty(
         name='Cube',
-        description='When checked the projector cube is visible in the viewport.',
+        description='Projector Cube visible in the viewport and render',
         default=True,
         update=update_projector_cube_visibility,
     )  # type: ignore
+
+    show_projector_spotlight: bpy.props.BoolProperty(
+        name='Spotlight',
+        description='Projector Light visible in the viewport and render',
+        default=True,
+        update=lambda self, context: update_projector_spotlight_visibility(self, context),
+    )  # type: ignore
+# Sichtbarkeit des Projector_Spotlight steuern
+def update_projector_spotlight_visibility(proj_settings, context):
+    """
+    Zeigt oder versteckt den Projector_Spotlight je nach show_projector_spotlight Property.
+    """
+    from .helper import get_child_ID_by_name, get_projector
+    projector = get_projector(context)
+    if projector is None:
+        return
+    try:
+        spot = projector.children[get_child_ID_by_name(projector.children, 'Projector_Spotlight')]
+    except Exception:
+        return
+    visible = proj_settings.show_projector_spotlight
+    spot.hide_viewport = not visible
+    spot.hide_render = not visible
 
 
 def register():

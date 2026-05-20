@@ -75,19 +75,10 @@ class PROJECTOR_PT_projector_settings(Panel):
             # Pixel Grid
             box.prop(proj_settings, 'show_pixel_grid')
 
-            row = box.row(align=True)
-            row.prop(proj_settings, 'show_helper_lines', icon='VIS_SEL_11')
-            row.prop(proj_settings, 'show_projector_cube', icon='VIS_SEL_11')
-
-            # Spotlight Toggle Button
-            spot = None
-            for child in projector.children:
-                if child.type == 'LIGHT' and child.name == 'Projector_Spotlight':
-                    spot = child
-                    break
-            if spot:
-                icon = 'OUTLINER_OB_LIGHT' if not spot.hide_viewport else 'OUTLINER_DATA_LIGHT'
-                row.operator('projector.toggle_spotlight', text='', icon=icon)
+            row = box.column(align=True)            
+            row.prop(proj_settings, 'show_helper_lines', text='Helper Lines', icon='LIGHT_SPOT')
+            row.prop(proj_settings, 'show_projector_cube', text='Projector Cube', icon='MESH_CUBE')
+            row.prop(proj_settings, 'show_projector_spotlight', text='Spotlight', icon='OUTLINER_OB_LIGHT')
 
             # Custom Texture
             if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value:
