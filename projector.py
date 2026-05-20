@@ -247,22 +247,6 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         unit='POWER',
     )  # type: ignore
 
-    v_shift: bpy.props.FloatProperty(
-        name='Vertical Shift',
-        description='Vertical Lens Shift',
-        soft_min=-100,
-        soft_max=100,
-        update=update_lens_shift,
-    )  # type: ignore
-
-    h_shift: bpy.props.FloatProperty(
-        name='Horizontal Shift',
-        description='Horizontal Lens Shift',
-        soft_min=-100,
-        soft_max=100,
-        update=update_lens_shift,
-    )  # type: ignore
-
     focus_distance: bpy.props.FloatProperty(
         name='Focus Distance',
         description='Set the focus distance in meter',
