@@ -1,3 +1,6 @@
+import json
+import os
+
 import bpy
 from bpy.types import Operator
 
@@ -118,7 +121,43 @@ class PROJECTOR_OT_delete_projector(Operator):
             else:
                 bpy.data.objects.remove(projector, do_unlink=True)
         return {'FINISHED'}
+    
+class PROJECTOR_OT_save_json(bpy.types.Operator):
+    bl_idname = "projector.save_json"
+    bl_label = "Save Projector as JSON"
+    bl_description = "Speichert die aktuellen Projector-Werte als JSON in /json/"
 
+    def execute(self, context):
+        selected_projectors = get_projectors(context, only_selected=True)
+        if not selected_projectors:
+            self.report({'WARNING'}, "No projector selected.")
+            return {'CANCELLED'}
+        name = getattr(context.scene, 'projector_save_name', '').strip()
+        if not name:
+            self.report({'ERROR'}, "Bitte einen Namen für die JSON-Datei angeben.")
+            return {'CANCELLED'}
+        # Dateiname bereinigen
+        import re
+        safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
+        file_path = os.path.join(bpy.path.abspath('//json'), f"{safe_name}.json")
+        for projector in selected_projectors:
+            if not hasattr(projector, 'proj_settings'):
+                continue
+            proj_settings = projector.proj_settings
+            data = {}
+            for prop in proj_settings.bl_rna.properties:
+                if prop.identifier == 'rna_type':
+                    continue
+                value = getattr(proj_settings, prop.identifier)
+                try:
+                    json.dumps(value)
+                    data[prop.identifier] = value
+                except Exception:
+                    data[prop.identifier] = str(value)
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+        self.report({'INFO'}, f"Projector gespeichert als {os.path.basename(file_path)}.")
+        return {'FINISHED'}
 
 class ProjectorSettings(bpy.types.PropertyGroup):
 
@@ -397,10 +436,12 @@ def register():
     bpy.utils.register_class(PROJECTOR_OT_create_projector)
     bpy.utils.register_class(PROJECTOR_OT_delete_projector)
     bpy.utils.register_class(PROJECTOR_OT_change_color_randomly)
+    bpy.utils.register_class(PROJECTOR_OT_save_json)
     bpy.types.Object.proj_settings = bpy.props.PointerProperty(type=ProjectorSettings)
 
 
 def unregister():
+    bpy.utils.unregister_class(PROJECTOR_OT_save_json)
     bpy.utils.unregister_class(PROJECTOR_OT_change_color_randomly)
     bpy.utils.unregister_class(PROJECTOR_OT_delete_projector)
     bpy.utils.unregister_class(PROJECTOR_OT_create_projector)

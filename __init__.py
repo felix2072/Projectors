@@ -1,6 +1,7 @@
 from . import ui
 from . import projector
 from . import operators
+from . import projector_load
 
 bl_info = {
     "name": "Projector",
@@ -19,9 +20,11 @@ def register():
     projector.register()
     operators.register()
     ui.register()
+    projector_load.register()
 
 
 def unregister():
     ui.unregister()
     operators.unregister()
     projector.unregister()
+    projector_load.unregister()

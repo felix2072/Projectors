@@ -5,6 +5,13 @@ import bpy
 from bpy.types import Panel, PropertyGroup, UIList, Operator
 
 
+def get_json_files(self, context):
+    import os
+    json_dir = os.path.join(os.path.dirname(__file__), 'json')
+    if os.path.exists(json_dir):
+        return [(f, f, f) for f in os.listdir(json_dir) if f.endswith('.json')]
+    return []
+
 class PROJECTOR_PT_projector_settings(Panel):
     bl_idname = 'OBJECT_PT_projector_n_panel'
     bl_label = 'Projector'
@@ -18,11 +25,10 @@ class PROJECTOR_PT_projector_settings(Panel):
         layout.use_property_decorate = False
 
         row = layout.row(align=True)
-        row.operator('projector.create',
-                     icon='ADD', text="New")
-        row.operator('projector.delete',
-                     text='Remove', icon='REMOVE')
+        row.operator('projector.create', icon='ADD', text="New")
+        row.operator('projector.delete', text='Remove', icon='REMOVE')
 
+        box = None
         if context.scene.render.engine == 'BLENDER_EEVEE':
             box = layout.box()
             box.label(text='Image Projection only works in Cycles.', icon='ERROR')
@@ -33,11 +39,30 @@ class PROJECTOR_PT_projector_settings(Panel):
             projector = selected_projectors[0]
             proj_settings = projector.proj_settings
 
-            layout.separator()
-
             layout.label(text='Projector Settings:')
-            box = layout.box()
 
+            import os
+            json_dir = os.path.join(os.path.dirname(__file__), 'json')
+            json_files = [f for f in os.listdir(json_dir) if f.endswith('.json')] if os.path.exists(json_dir) else []
+
+            preset_box = layout.box()
+            row_json = preset_box.row(align=True)
+            row_json.label(text='Lade Preset:')
+            if json_files:
+                if context.scene.projector_json_file not in json_files:
+                    row_json.label(text='Bitte Preset wählen', icon='ERROR')
+                row_json.prop(context.scene, "projector_json_file", text="")
+                op = row_json.operator('projector.load_json', text='Preset laden', icon='IMPORT')
+                op.filepath = os.path.join(json_dir, context.scene.projector_json_file)
+            else:
+                row_json.label(text='Keine Presets gefunden', icon='ERROR')
+
+            # Name-Input für JSON-Datei
+            preset_box.prop(context.scene, "projector_save_name", text="Name")
+            preset_box.operator('projector.save_json', text='Add Projector', icon='EXPORT')
+
+            # Eigene Box für Projector-Settings
+            box = layout.box()
             res_row = box.row()
             res_row.prop(proj_settings, 'resolution',
                          text='Resolution', icon='MOD_LENGTH')
@@ -47,7 +72,7 @@ class PROJECTOR_PT_projector_settings(Panel):
             else:
                 res_row.active = True
                 res_row.enabled = True
-            layout.prop(proj_settings,
+            box.prop(proj_settings,
                         'projected_texture', text='Project')
             # Projecton Size
 
@@ -56,7 +81,6 @@ class PROJECTOR_PT_projector_settings(Panel):
             # Focus Mode Switcher
             button_row = box.row(align=True)
             button_row.prop(proj_settings, 'focus_mode', text='Auto Adjust', expand=True)
-
 
             # Tabelle für Throw Ratio
             table = box.column(align=True)
@@ -122,10 +146,10 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             # Custom Texture
             if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value:
-                box = layout.box()
-                box.prop(proj_settings, 'use_custom_texture_res')
+                custom_box = layout.box()
+                custom_box.prop(proj_settings, 'use_custom_texture_res')
                 node = get_projectors(context, only_selected=True)[0].children[get_child_ID_by_type(projector.children,'LIGHT')].data.node_tree.nodes['Image Texture']
-                box.template_image(node, 'image', node.image_user, compact=False)
+                custom_box.template_image(node, 'image', node.image_user, compact=False)
 
 
 class PROJECTOR_PT_projected_color(Panel):
@@ -157,11 +181,25 @@ def append_to_add_menu(self, context):
                          text='Projector', icon='CAMERA_DATA')
 
 
+
 def register():
+    import bpy
     bpy.utils.register_class(PROJECTOR_PT_projector_settings)
     bpy.utils.register_class(PROJECTOR_PT_projected_color)
     # Register create  in the blender add menu.
     bpy.types.VIEW3D_MT_light_add.append(append_to_add_menu)
+    if not hasattr(bpy.types.Scene, 'projector_json_file'):
+        bpy.types.Scene.projector_json_file = bpy.props.StringProperty(
+            name="Projector Preset",
+            description="Wähle eine JSON Datei zum Laden",
+            default=""
+        )
+    if not hasattr(bpy.types.Scene, 'projector_save_name'):
+        bpy.types.Scene.projector_save_name = bpy.props.StringProperty(
+            name="Name",
+            description="Name für die gespeicherte JSON-Datei",
+            default=""
+        )
 
 
 def unregister():
@@ -169,3 +207,7 @@ def unregister():
     bpy.types.VIEW3D_MT_light_add.remove(append_to_add_menu)
     bpy.utils.unregister_class(PROJECTOR_PT_projected_color)
     bpy.utils.unregister_class(PROJECTOR_PT_projector_settings)
+    if hasattr(bpy.types.Scene, 'projector_json_file'):
+        del bpy.types.Scene.projector_json_file
+    if hasattr(bpy.types.Scene, 'projector_save_name'):
+        del bpy.types.Scene.projector_save_name
