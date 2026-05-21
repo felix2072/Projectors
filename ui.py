@@ -16,6 +16,16 @@ def get_json_files(self, context):
         return files
     return [('','(keine Presets gefunden)','')]
 
+
+def load_json_on_select(self, context):
+    # Automatisches Laden des Presets beim Auswählen im Dropdown
+    if self.projector_json_file:
+        import os
+        json_dir = os.path.join(os.path.dirname(__file__), 'json')
+        filepath = os.path.join(json_dir, self.projector_json_file)
+        bpy.ops.projector.load_json(filepath=filepath)
+
+
     def get_json_files(self, context):
         import os
         json_dir = os.path.join(os.path.dirname(__file__), 'json')
@@ -50,9 +60,7 @@ class PROJECTOR_PT_projector_settings(Panel):
 
         selected_projectors = get_projectors(context, only_selected=True)
         if len(selected_projectors) == 1:
-            projector = selected_projectors[0]
-            proj_settings = projector.proj_settings
-
+            layout.label(text='Preset:')
             import os
             json_dir = os.path.join(os.path.dirname(__file__), 'json')
             json_files = [f for f in os.listdir(json_dir) if f.endswith('.json')] if os.path.exists(json_dir) else []
@@ -61,9 +69,9 @@ class PROJECTOR_PT_projector_settings(Panel):
             row_json = preset_box.row(align=True)
 
             row_json.prop(context.scene, "projector_json_file", text="")
-            if context.scene.projector_json_file:
+            """ if context.scene.projector_json_file:
                 op = row_json.operator('projector.load_json', text='Load Preset', icon='IMPORT')
-                op.filepath = os.path.join(json_dir, context.scene.projector_json_file)
+                op.filepath = os.path.join(json_dir, context.scene.projector_json_file) """
 
             row_save = preset_box.row(align=True)
             # Platzhalter: gewählter Presetname in grau, falls Feld leer
@@ -74,6 +82,8 @@ class PROJECTOR_PT_projector_settings(Panel):
             # Eigene Box für Projector-Settings
             box = layout.box()
             res_row = box.row()
+            projector = selected_projectors[0]
+            proj_settings = projector.proj_settings
             res_row.prop(proj_settings, 'resolution',
                          text='Resolution', icon='MOD_LENGTH')
             if proj_settings.projected_texture == Textures.CUSTOM_TEXTURE.value and proj_settings.use_custom_texture_res:
@@ -202,7 +212,8 @@ def register():
         bpy.types.Scene.projector_json_file = bpy.props.EnumProperty(
             name="Projector Preset",
             description="Wähle eine JSON Datei zum Laden",
-            items=get_json_files
+            items=get_json_files,
+            update=load_json_on_select
         )
     if not hasattr(bpy.types.Scene, 'projector_save_name'):
         bpy.types.Scene.projector_save_name = bpy.props.StringProperty(
