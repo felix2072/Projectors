@@ -53,42 +53,66 @@ class PROJECTOR_PT_projector_settings(Panel):
 
             box.prop(proj_settings, 'power', text='Power')
 
-            #
-            row = box.row(align=True)
-            row.prop(proj_settings, 'throw_ratio', text='Throw Ratio', slider=True)
-            row.prop(proj_settings, 'min_throw_ratio', text='Min')
-            row.prop(proj_settings, 'max_throw_ratio', text='Max')
+            # Focus Mode Switcher
+            button_row = box.row(align=True)
+            button_row.prop(proj_settings, 'focus_mode', text='Auto Adjust', expand=True)
+
+
+            # Tabelle für Throw Ratio
+            table = box.column(align=True)
+            # Header-Grid direkt vor Wertezeile
+            grid = table.grid_flow(columns=4, align=True)
+            # Erste Spalte (Leer)
+            row1 = grid.row()
+            row1.alignment = 'CENTER'
+            row1.label(text='')
+            # Zweite Spalte
+            row2 = grid.row()
+            row2.alignment = 'CENTER'
+            row2.label(text='value')
+            # Dritte Spalte
+            row3 = grid.row()
+            row3.alignment = 'CENTER'
+            row3.label(text='min')
+            # Vierte Spalte
+            row4 = grid.row()
+            row4.alignment = 'CENTER'
+            row4.label(text='max')
+            # Wertezeile
+            row = table.row(align=True)
+            row.label(text='Throw Ratio')
+            row.prop(proj_settings, 'throw_ratio', text='', slider=True)
+            row.prop(proj_settings, 'min_throw_ratio', text='')
+            row.prop(proj_settings, 'max_throw_ratio', text='')
 
             lense = box.column(align=True, heading='')
             # Lens Shift
             row = lense.row(align=True)
-            row.prop(proj_settings, 'v_shift', text='Vertical Shift', slider=True)
-            row.prop(proj_settings, 'min_v_shift', text='Min')
-            row.prop(proj_settings, 'max_v_shift', text='Max')
+            row.label(text='Lens Shift V')
+            row.prop(proj_settings, 'v_shift', text='', slider=True)
+            row.prop(proj_settings, 'min_v_shift', text='')
+            row.prop(proj_settings, 'max_v_shift', text='')
 
             row = lense.row(align=True)
-            row.prop(proj_settings, 'h_shift', text='Horizontal Shift', slider=True)
-            row.prop(proj_settings, 'min_h_shift', text='Min')
-            row.prop(proj_settings, 'max_h_shift', text='Max')
+            row.label(text='Lens Shift H')
+            row.prop(proj_settings, 'h_shift', text='', slider=True)
+            row.prop(proj_settings, 'min_h_shift', text='')
+            row.prop(proj_settings, 'max_h_shift', text='')
 
+            # Focus Distance (immer aktiv)
+            box.prop(proj_settings, 'focus_distance', text='Focus Distance', slider=True)
 
-            box.prop(data=proj_settings, property='focus_distance', text='Focus Distance',slider=True)
-            # Zwei Buttons unter Focus Distance
-            button_row = box.row(align=True)
-            button_row.prop(proj_settings, 'focus_mode', text='Auto Adjust', toggle=True, index=0)
-
-            #pro = col.split(factor=0.0, align=True)
+            # Image Size (immer aktiv)
             img_size = box.column(align=True, heading='Image')
-            img_size.prop(proj_settings, 'w_projection', text='Image Width',slider=True)
-            img_size.prop(proj_settings, 'h_projection', text='Image Height',slider=True)
-            img_size.prop(proj_settings, 'd_projection', text='Image Diagonal',slider=True)
-             
-            p_size = box.column(align=True, heading='Projector')
-            p_size.prop(proj_settings, 'projector_w', text='Projector Width',slider=True)
-            p_size.prop(proj_settings, 'projector_h', text='Projector Height',slider=True)
-            p_size.prop(proj_settings, 'projector_d', text='Projector Depth',slider=True)
+            img_size.prop(proj_settings, 'w_projection', text='Image Width', slider=True)
+            img_size.prop(proj_settings, 'h_projection', text='Image Height', slider=True)
+            img_size.prop(proj_settings, 'd_projection', text='Image Diagonal', slider=True)
 
-            # Pixel Grid
+            # Projector Size (immer aktiv)
+            p_size = box.column(align=True, heading='Projector')
+            p_size.prop(proj_settings, 'projector_w', text='Projector Width', slider=True)
+            p_size.prop(proj_settings, 'projector_h', text='Projector Height', slider=True)
+            p_size.prop(proj_settings, 'projector_d', text='Projector Depth', slider=True)
 
             row = box.column(align=True)            
             row.prop(proj_settings, 'show_helper_lines', text='Helper Lines', icon='LIGHT_SPOT')

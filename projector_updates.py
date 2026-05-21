@@ -127,10 +127,15 @@ def update_projection_by_dimension(proj_settings, context, changed):
         _projection_update_in_progress = False
         return
 
-    # throw_ratio anpassen
+
+    focus_mode = getattr(proj_settings, 'focus_mode', 'THROW_RATIO')
     if w > 0:
-        proj_settings['throw_ratio'] = proj_settings.focus_distance / w
-        update_throw_ratio(proj_settings, context)
+        if focus_mode == 'THROW_RATIO':
+            proj_settings['throw_ratio'] = proj_settings.focus_distance / w
+            update_throw_ratio(proj_settings, context)
+        elif focus_mode == 'FOCUS_DISTANCE':
+            proj_settings['focus_distance'] = proj_settings.throw_ratio * w
+            update_focus_distance(proj_settings, context)
 
     _projection_update_in_progress = False
 
