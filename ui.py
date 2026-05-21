@@ -5,12 +5,26 @@ import bpy
 from bpy.types import Panel, PropertyGroup, UIList, Operator
 
 
+
 def get_json_files(self, context):
     import os
     json_dir = os.path.join(os.path.dirname(__file__), 'json')
     if os.path.exists(json_dir):
-        return [(f, f, f) for f in os.listdir(json_dir) if f.endswith('.json')]
-    return []
+        files = [(f, os.path.splitext(f)[0], f) for f in os.listdir(json_dir) if f.endswith('.json')]
+        if not files:
+            files = [('','(keine Presets gefunden)','')]
+        return files
+    return [('','(keine Presets gefunden)','')]
+
+    def get_json_files(self, context):
+        import os
+        json_dir = os.path.join(os.path.dirname(__file__), 'json')
+        if os.path.exists(json_dir):
+            files = [(f, f, f) for f in os.listdir(json_dir) if f.endswith('.json')]
+            if not files:
+                files = [('','(keine Presets gefunden)','')]
+            return files
+        return [('','(keine Presets gefunden)','')]
 
 class PROJECTOR_PT_projector_settings(Panel):
     bl_idname = 'OBJECT_PT_projector_n_panel'
@@ -39,28 +53,24 @@ class PROJECTOR_PT_projector_settings(Panel):
             projector = selected_projectors[0]
             proj_settings = projector.proj_settings
 
-            layout.label(text='Projector Settings:')
-
             import os
             json_dir = os.path.join(os.path.dirname(__file__), 'json')
             json_files = [f for f in os.listdir(json_dir) if f.endswith('.json')] if os.path.exists(json_dir) else []
 
             preset_box = layout.box()
             row_json = preset_box.row(align=True)
-            row_json.label(text='Lade Preset:')
-            if json_files:
-                if context.scene.projector_json_file not in json_files:
-                    row_json.label(text='Bitte Preset wählen', icon='ERROR')
-                row_json.prop(context.scene, "projector_json_file", text="")
-                op = row_json.operator('projector.load_json', text='Preset laden', icon='IMPORT')
+
+            row_json.prop(context.scene, "projector_json_file", text="")
+            if context.scene.projector_json_file:
+                op = row_json.operator('projector.load_json', text='Load Preset', icon='IMPORT')
                 op.filepath = os.path.join(json_dir, context.scene.projector_json_file)
-            else:
-                row_json.label(text='Keine Presets gefunden', icon='ERROR')
 
-            # Name-Input für JSON-Datei
-            preset_box.prop(context.scene, "projector_save_name", text="Name")
-            preset_box.operator('projector.save_json', text='Add Projector', icon='EXPORT')
+            row_save = preset_box.row(align=True)
+            # Platzhalter: gewählter Presetname in grau, falls Feld leer
+            row_save.prop(context.scene, "projector_save_name", text="")
+            row_save.operator('projector.save_json', text='Save Preset', icon='EXPORT')
 
+            layout.label(text='Projector Settings:')
             # Eigene Box für Projector-Settings
             box = layout.box()
             res_row = box.row()
@@ -189,16 +199,16 @@ def register():
     # Register create  in the blender add menu.
     bpy.types.VIEW3D_MT_light_add.append(append_to_add_menu)
     if not hasattr(bpy.types.Scene, 'projector_json_file'):
-        bpy.types.Scene.projector_json_file = bpy.props.StringProperty(
+        bpy.types.Scene.projector_json_file = bpy.props.EnumProperty(
             name="Projector Preset",
             description="Wähle eine JSON Datei zum Laden",
-            default=""
+            items=get_json_files
         )
     if not hasattr(bpy.types.Scene, 'projector_save_name'):
         bpy.types.Scene.projector_save_name = bpy.props.StringProperty(
             name="Name",
             description="Name für die gespeicherte JSON-Datei",
-            default=""
+            default="Preset Name"
         )
 
 
