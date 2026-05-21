@@ -71,14 +71,18 @@ class PROJECTOR_PT_projector_settings(Panel):
             row.prop(proj_settings, 'min_h_shift', text='Min')
             row.prop(proj_settings, 'max_h_shift', text='Max')
 
+
             box.prop(data=proj_settings, property='focus_distance', text='Focus Distance',slider=True)
+            # Zwei Buttons unter Focus Distance
+            button_row = box.row(align=True)
+            button_row.prop(proj_settings, 'focus_mode', text='Auto Adjust', toggle=True, index=0)
 
             #pro = col.split(factor=0.0, align=True)
             img_size = box.column(align=True, heading='Image')
             img_size.prop(proj_settings, 'w_projection', text='Image Width',slider=True)
             img_size.prop(proj_settings, 'h_projection', text='Image Height',slider=True)
             img_size.prop(proj_settings, 'd_projection', text='Image Diagonal',slider=True)
-            
+             
             p_size = box.column(align=True, heading='Projector')
             p_size.prop(proj_settings, 'projector_w', text='Projector Width',slider=True)
             p_size.prop(proj_settings, 'projector_h', text='Projector Height',slider=True)

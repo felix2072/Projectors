@@ -222,6 +222,16 @@ class ProjectorSettings(bpy.types.PropertyGroup):
         subtype='FACTOR',
     )  # type: ignore
 
+    focus_mode: bpy.props.EnumProperty(
+        name="Focus Mode",
+        description="Switch between Throw Ratio and Focus Distance",
+        items=[
+            ('THROW_RATIO', "Throw Ratio", ""),
+            ('FOCUS_DISTANCE', "Focus Distance", "")
+        ],
+        default='THROW_RATIO'
+    )  # type: ignore
+
     v_shift: bpy.props.FloatProperty(
         name='Vertical Shift',
         description='Vertical Lens Shift',
