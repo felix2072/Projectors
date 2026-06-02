@@ -139,7 +139,8 @@ class PROJECTOR_OT_save_json(bpy.types.Operator):
         # Dateiname bereinigen
         import re
         safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
-        file_path = os.path.join(bpy.path.abspath('//json'), f"{safe_name}.json")
+        addon_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(addon_dir, 'json', f"{safe_name}.json")
         for projector in selected_projectors:
             if not hasattr(projector, 'proj_settings'):
                 continue
