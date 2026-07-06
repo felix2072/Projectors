@@ -5,7 +5,7 @@ import bmesh
 import bpy
 
 from .helper import ADDON_ID, auto_offset
-from .projector_constants import RESOLUTIONS
+from .resolution_presets import get_resolution_items
 
 logging.basicConfig(
     format='[ProjectorForks Addon]: %(name)s - %(levelname)s - %(message)s'
@@ -13,25 +13,28 @@ logging.basicConfig(
 log = logging.getLogger(name=__file__)
 
 
-def create_projector_textures():
-    """Ensure all generated projector textures exist."""
-    name_template = '_proj.tex.{}'
-    for res in RESOLUTIONS:
-        img_name = name_template.format(res[0])
-        w, h = res[0].split('x')
-        if not bpy.data.images.get(img_name):
-            log.debug(f'Create projection texture: {res}')
-            bpy.ops.image.new(
-                name=img_name,
-                width=int(w),
-                height=int(h),
-                color=(0.0, 0.0, 0.0, 1.0),
-                alpha=True,
-                generated_type='COLOR_GRID',
-                float=False,
-            )
+def ensure_projector_texture(resolution_id):
+    """Create the generated texture for one 'WIDTHxHEIGHT' resolution id if it doesn't exist yet."""
+    img_name = f'_proj.tex.{resolution_id}'
+    if not bpy.data.images.get(img_name):
+        w, h = resolution_id.split('x')
+        log.debug(f'Create projection texture: {img_name}')
+        bpy.ops.image.new(
+            name=img_name,
+            width=int(w),
+            height=int(h),
+            color=(0.0, 0.0, 0.0, 1.0),
+            alpha=True,
+            generated_type='COLOR_GRID',
+            float=False,
+        )
+    bpy.data.images[img_name].use_fake_user = True
 
-        bpy.data.images[img_name].use_fake_user = True
+
+def create_projector_textures():
+    """Ensure the generated textures for all currently known resolution presets exist."""
+    for identifier, _label, _desc, _number in get_resolution_items(None, None):
+        ensure_projector_texture(identifier)
 
 
 def add_projector_node_tree_to_spot(spot):

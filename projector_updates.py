@@ -9,6 +9,18 @@ from .helper import (
     random_color,
 )
 from .projector_constants import Textures
+from .projector_factory import ensure_projector_texture
+
+DEFAULT_RESOLUTION = (1920, 1080)
+
+
+def _parse_resolution_string(res_str):
+    """Parse a 'WIDTHxHEIGHT' identifier, falling back to DEFAULT_RESOLUTION if malformed/empty."""
+    try:
+        w, h = res_str.split('x')
+        return int(w), int(h)
+    except (ValueError, AttributeError, TypeError):
+        return DEFAULT_RESOLUTION
 
 
 def _get_projector_from_settings(proj_settings, context):
@@ -31,7 +43,7 @@ def get_resolution(proj_settings, context):
         else:
             w, h = 300, 300
     else:
-        w, h = proj_settings.resolution.split('x')
+        w, h = _parse_resolution_string(proj_settings.resolution)
 
     return float(w), float(h)
 
@@ -192,10 +204,18 @@ def update_resolution(proj_settings, context):
     nodes = projector.children[get_child_ID_by_type(projector.children, 'LIGHT')].data.node_tree.nodes[
         'Group'
     ].node_tree.nodes
-    nodes['Image Texture'].image = bpy.data.images[f'_proj.tex.{proj_settings.resolution}']
+    width, height = _parse_resolution_string(proj_settings.resolution)
+    resolution_id = f'{width}x{height}'
+    ensure_projector_texture(resolution_id)
+    nodes['Image Texture'].image = bpy.data.images[f'_proj.tex.{resolution_id}']
     update_throw_ratio(proj_settings, context)
     update_pixel_grid(proj_settings, context)
     update_projection_helper(proj_settings, context)
+
+    scene = getattr(context, 'scene', None)
+    if scene is not None and hasattr(scene, 'resolution_save_x') and hasattr(scene, 'resolution_save_y'):
+        scene.resolution_save_x = width
+        scene.resolution_save_y = height
 
 
 def update_checker_color(proj_settings, context):

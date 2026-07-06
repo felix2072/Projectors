@@ -5,7 +5,8 @@ import bpy
 from bpy.types import Operator
 
 from .helper import get_projectors, random_color
-from .projector_constants import PROJECTED_OUTPUTS, RESOLUTIONS, Textures
+from .projector_constants import PROJECTED_OUTPUTS, RESOLUTIONS, Textures  # noqa: F401 (RESOLUTIONS re-exported for ui.py)
+from .resolution_presets import get_resolution_items, save_resolution_preset
 from .projector_factory import (
     add_projector_node_tree_to_spot,
     create_pixel_grid_node_group,
@@ -159,6 +160,27 @@ class PROJECTOR_OT_save_json(bpy.types.Operator):
                 json.dump(data, f, indent=2)
         self.report({'INFO'}, f"Projector gespeichert als {os.path.basename(file_path)}.")
         return {'FINISHED'}
+
+
+class PROJECTOR_OT_save_resolution_json(bpy.types.Operator):
+    bl_idname = "projector.save_resolution_json"
+    bl_label = "Save Resolution as JSON"
+    bl_description = "Speichert eine Auflösung (Name, Breite, Höhe) als JSON in /resolutions/"
+
+    def execute(self, context):
+        name = getattr(context.scene, 'resolution_save_name', '').strip()
+        width = getattr(context.scene, 'resolution_save_x', 0)
+        height = getattr(context.scene, 'resolution_save_y', 0)
+        if not name:
+            self.report({'ERROR'}, "Bitte einen Namen für die Auflösung angeben.")
+            return {'CANCELLED'}
+        if width <= 0 or height <= 0:
+            self.report({'ERROR'}, "Breite und Höhe müssen größer als 0 sein.")
+            return {'CANCELLED'}
+        file_path = save_resolution_preset(name, width, height)
+        self.report({'INFO'}, f"Auflösung gespeichert als {os.path.basename(file_path)}.")
+        return {'FINISHED'}
+
 
 class ProjectorSettings(bpy.types.PropertyGroup):
 
@@ -362,8 +384,7 @@ class ProjectorSettings(bpy.types.PropertyGroup):
     )  # type: ignore
 
     resolution: bpy.props.EnumProperty(
-        items=RESOLUTIONS,
-        default='1920x1080',
+        items=get_resolution_items,
         description='Select a Resolution for your Projector',
         update=update_resolution,
     )  # type: ignore
@@ -438,10 +459,12 @@ def register():
     bpy.utils.register_class(PROJECTOR_OT_delete_projector)
     bpy.utils.register_class(PROJECTOR_OT_change_color_randomly)
     bpy.utils.register_class(PROJECTOR_OT_save_json)
+    bpy.utils.register_class(PROJECTOR_OT_save_resolution_json)
     bpy.types.Object.proj_settings = bpy.props.PointerProperty(type=ProjectorSettings)
 
 
 def unregister():
+    bpy.utils.unregister_class(PROJECTOR_OT_save_resolution_json)
     bpy.utils.unregister_class(PROJECTOR_OT_save_json)
     bpy.utils.unregister_class(PROJECTOR_OT_change_color_randomly)
     bpy.utils.unregister_class(PROJECTOR_OT_delete_projector)

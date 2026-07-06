@@ -92,6 +92,14 @@ class PROJECTOR_PT_projector_settings(Panel):
             else:
                 res_row.active = True
                 res_row.enabled = True
+
+            res_save_box = box.box()
+            res_save_box.label(text='Save Resolution as Preset:')
+            res_save_row = res_save_box.row(align=True)
+            res_save_row.prop(context.scene, 'resolution_save_name', text='')
+            res_save_row.prop(context.scene, 'resolution_save_x', text='X')
+            res_save_row.prop(context.scene, 'resolution_save_y', text='Y')
+            res_save_box.operator('projector.save_resolution_json', text='Save Resolution', icon='EXPORT')
             box.prop(proj_settings,
                         'projected_texture', text='Project')
             # Projecton Size
@@ -221,6 +229,26 @@ def register():
             description="Name für die gespeicherte JSON-Datei",
             default="Preset Name"
         )
+    if not hasattr(bpy.types.Scene, 'resolution_save_name'):
+        bpy.types.Scene.resolution_save_name = bpy.props.StringProperty(
+            name="Name",
+            description="Name für die neue Auflösung (z.B. WXGA)",
+            default="Custom"
+        )
+    if not hasattr(bpy.types.Scene, 'resolution_save_x'):
+        bpy.types.Scene.resolution_save_x = bpy.props.IntProperty(
+            name="X",
+            description="Breite der Auflösung in Pixel",
+            default=1920,
+            min=1,
+        )
+    if not hasattr(bpy.types.Scene, 'resolution_save_y'):
+        bpy.types.Scene.resolution_save_y = bpy.props.IntProperty(
+            name="Y",
+            description="Höhe der Auflösung in Pixel",
+            default=1080,
+            min=1,
+        )
 
 
 def unregister():
@@ -232,3 +260,9 @@ def unregister():
         del bpy.types.Scene.projector_json_file
     if hasattr(bpy.types.Scene, 'projector_save_name'):
         del bpy.types.Scene.projector_save_name
+    if hasattr(bpy.types.Scene, 'resolution_save_name'):
+        del bpy.types.Scene.resolution_save_name
+    if hasattr(bpy.types.Scene, 'resolution_save_x'):
+        del bpy.types.Scene.resolution_save_x
+    if hasattr(bpy.types.Scene, 'resolution_save_y'):
+        del bpy.types.Scene.resolution_save_y
