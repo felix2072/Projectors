@@ -246,6 +246,18 @@ def update_pixel_grid(proj_settings, context):
     width, height = get_resolution(proj_settings, context)
     pixel_grid_nodes['_width'].outputs[0].default_value = width
     pixel_grid_nodes['_height'].outputs[0].default_value = height
+
+    # Keep custom texture pixelation in sync with the projector resolution.
+    if nodes.get('_pixel_width') is not None:
+        nodes['_pixel_width'].outputs[0].default_value = width
+    if nodes.get('_pixel_height') is not None:
+        nodes['_pixel_height'].outputs[0].default_value = height
+    if nodes.get('_pixelate_mix') is not None:
+        nodes['_pixelate_mix'].inputs[0].default_value = 1.0 if proj_settings.show_pixel_grid else 0.0
+
+    if nodes.get('Image Texture') is not None:
+        nodes['Image Texture'].interpolation = 'Closest' if proj_settings.show_pixel_grid else 'Linear'
+
     if proj_settings.show_pixel_grid:
         root_tree.links.new(nodes['pixel_grid'].outputs[0], nodes['Light Output'].inputs[0])
     else:

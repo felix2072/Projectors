@@ -96,6 +96,8 @@ class TestProjector(unittest.TestCase):
         else:
             self.assertIn(('pixel_grid', 'Light Output'), links_as_node_names)
             self.assertNotIn(('Emission', 'Light Output'), links_as_node_names)
+            self.assertEqual(self.nodes['_pixelate_mix'].inputs[0].default_value, 1.0)
+            self.assertEqual(self.nodes['Image Texture'].interpolation, 'Closest')
         # Turn Pixel Grid off
         self.c.proj_settings.show_pixel_grid = False
         links_as_node_names = []
@@ -106,15 +108,22 @@ class TestProjector(unittest.TestCase):
             self.assertNotIn(('pixel_grid', 'Light Output'),
                              links_as_node_names)
             self.assertIn(('Emission', 'Light Output'), links_as_node_names)
+            self.assertEqual(self.nodes['_pixelate_mix'].inputs[0].default_value, 0.0)
+            self.assertEqual(self.nodes['Image Texture'].interpolation, 'Linear')
 
     def test_pixel_grid_resolution(self):
         nodes = self.s.data.node_tree.nodes['pixel_grid'].node_tree.nodes
+        root_nodes = self.s.data.node_tree.nodes
         # Check Pixel Grid default resolution
         width, height = self.c.proj_settings.resolution.split('x')
         self.assertEqual(
             nodes['_width'].outputs[0].default_value, float(width))
         self.assertEqual(
             nodes['_height'].outputs[0].default_value, float(height))
+        self.assertEqual(
+            root_nodes['_pixel_width'].outputs[0].default_value, float(width))
+        self.assertEqual(
+            root_nodes['_pixel_height'].outputs[0].default_value, float(height))
         # Check Pixel Grid resolution update
         x, y = 1024, 768
         self.c.proj_settings.resolution = f'{x}x{y}'
@@ -122,6 +131,10 @@ class TestProjector(unittest.TestCase):
             nodes['_width'].outputs[0].default_value, float(x))
         self.assertEqual(
             nodes['_height'].outputs[0].default_value, float(y))
+        self.assertEqual(
+            root_nodes['_pixel_width'].outputs[0].default_value, float(x))
+        self.assertEqual(
+            root_nodes['_pixel_height'].outputs[0].default_value, float(y))
         
 
 

@@ -130,6 +130,76 @@ def add_projector_node_tree_to_spot(spot):
     user_texture.label = 'Add your Image Texture or Movie here'
     user_texture.location = auto_pos_root(200, y=200)
 
+    # Pixelate custom texture UVs in projector resolution when Pixel Grid is enabled.
+    pixelate_sep = root_tree.nodes.new('ShaderNodeSeparateXYZ')
+    pixelate_sep.name = '_pixelate_sep'
+    pixelate_sep.location = auto_pos_root(200, y=450)
+
+    pixel_width = root_tree.nodes.new('ShaderNodeValue')
+    pixel_width.name = '_pixel_width'
+    pixel_width.label = 'Pixel Width'
+    pixel_width.outputs[0].default_value = 1920.0
+    pixel_width.location = auto_pos_root(y=650)
+
+    pixel_height = root_tree.nodes.new('ShaderNodeValue')
+    pixel_height.name = '_pixel_height'
+    pixel_height.label = 'Pixel Height'
+    pixel_height.outputs[0].default_value = 1080.0
+    pixel_height.location = auto_pos_root(y=500)
+
+    x_mul = root_tree.nodes.new('ShaderNodeMath')
+    x_mul.operation = 'MULTIPLY'
+    x_mul.name = '_pixelate_x_mul'
+    x_mul.location = auto_pos_root(100, y=650)
+
+    x_floor = root_tree.nodes.new('ShaderNodeMath')
+    x_floor.operation = 'FLOOR'
+    x_floor.name = '_pixelate_x_floor'
+    x_floor.location = auto_pos_root(100, y=650)
+
+    x_add_half = root_tree.nodes.new('ShaderNodeMath')
+    x_add_half.operation = 'ADD'
+    x_add_half.inputs[1].default_value = 0.5
+    x_add_half.name = '_pixelate_x_add_half'
+    x_add_half.location = auto_pos_root(100, y=650)
+
+    x_div = root_tree.nodes.new('ShaderNodeMath')
+    x_div.operation = 'DIVIDE'
+    x_div.name = '_pixelate_x_div'
+    x_div.location = auto_pos_root(100, y=650)
+
+    y_mul = root_tree.nodes.new('ShaderNodeMath')
+    y_mul.operation = 'MULTIPLY'
+    y_mul.name = '_pixelate_y_mul'
+    y_mul.location = auto_pos_root(100, y=500)
+
+    y_floor = root_tree.nodes.new('ShaderNodeMath')
+    y_floor.operation = 'FLOOR'
+    y_floor.name = '_pixelate_y_floor'
+    y_floor.location = auto_pos_root(100, y=500)
+
+    y_add_half = root_tree.nodes.new('ShaderNodeMath')
+    y_add_half.operation = 'ADD'
+    y_add_half.inputs[1].default_value = 0.5
+    y_add_half.name = '_pixelate_y_add_half'
+    y_add_half.location = auto_pos_root(100, y=500)
+
+    y_div = root_tree.nodes.new('ShaderNodeMath')
+    y_div.operation = 'DIVIDE'
+    y_div.name = '_pixelate_y_div'
+    y_div.location = auto_pos_root(100, y=500)
+
+    pixelate_combine = root_tree.nodes.new('ShaderNodeCombineXYZ')
+    pixelate_combine.name = '_pixelate_combine'
+    pixelate_combine.location = auto_pos_root(100, y=350)
+
+    pixelate_mix = root_tree.nodes.new('ShaderNodeMixRGB')
+    pixelate_mix.name = '_pixelate_mix'
+    pixelate_mix.label = 'Pixelate Mix'
+    pixelate_mix.blend_type = 'MIX'
+    pixelate_mix.inputs[0].default_value = 0.0
+    pixelate_mix.location = auto_pos_root(150, y=250)
+
     emission = root_tree.nodes.new('ShaderNodeEmission')
     emission.inputs['Strength'].default_value = 1
     emission.location = auto_pos_root(300)
@@ -161,7 +231,30 @@ def add_projector_node_tree_to_spot(spot):
     tree.links.new(img.outputs['Alpha'], mix_rgb.inputs[0])
     tree.links.new(checker_tex.outputs['Color'], mix_rgb.inputs[2])
 
-    root_tree.links.new(group.outputs['texture vector'], user_texture.inputs['Vector'])
+    root_tree.links.new(group.outputs['texture vector'], pixelate_sep.inputs['Vector'])
+
+    root_tree.links.new(pixelate_sep.outputs['X'], x_mul.inputs[0])
+    root_tree.links.new(pixel_width.outputs[0], x_mul.inputs[1])
+    root_tree.links.new(x_mul.outputs[0], x_floor.inputs[0])
+    root_tree.links.new(x_floor.outputs[0], x_add_half.inputs[0])
+    root_tree.links.new(x_add_half.outputs[0], x_div.inputs[0])
+    root_tree.links.new(pixel_width.outputs[0], x_div.inputs[1])
+
+    root_tree.links.new(pixelate_sep.outputs['Y'], y_mul.inputs[0])
+    root_tree.links.new(pixel_height.outputs[0], y_mul.inputs[1])
+    root_tree.links.new(y_mul.outputs[0], y_floor.inputs[0])
+    root_tree.links.new(y_floor.outputs[0], y_add_half.inputs[0])
+    root_tree.links.new(y_add_half.outputs[0], y_div.inputs[0])
+    root_tree.links.new(pixel_height.outputs[0], y_div.inputs[1])
+
+    root_tree.links.new(x_div.outputs[0], pixelate_combine.inputs['X'])
+    root_tree.links.new(y_div.outputs[0], pixelate_combine.inputs['Y'])
+    root_tree.links.new(pixelate_sep.outputs['Z'], pixelate_combine.inputs['Z'])
+
+    root_tree.links.new(group.outputs['texture vector'], pixelate_mix.inputs['Color1'])
+    root_tree.links.new(pixelate_combine.outputs['Vector'], pixelate_mix.inputs['Color2'])
+    root_tree.links.new(pixelate_mix.outputs['Color'], user_texture.inputs['Vector'])
+
     root_tree.links.new(group.outputs['color'], emission.inputs['Color'])
     root_tree.links.new(emission.outputs['Emission'], output.inputs['Surface'])
 
