@@ -44,6 +44,17 @@ def get_resolution_items(self, context):
         # even after presets are added, removed or reordered elsewhere in the list.
         number = preset['x'] * 100000 + preset['y']
         items.append((identifier, label, '', number))
+
+    # Also expose the width/height currently being edited in the "Save Resolution" fields,
+    # even before it's written to disk, so picking it as the active resolution works live.
+    scene = getattr(context, 'scene', None)
+    custom_x = getattr(scene, 'resolution_save_x', None)
+    custom_y = getattr(scene, 'resolution_save_y', None)
+    if custom_x and custom_y:
+        custom_id = f'{custom_x}x{custom_y}'
+        if not any(item[0] == custom_id for item in items):
+            items.append((custom_id, f'Custom ({custom_id})', '', custom_x * 100000 + custom_y))
+
     if not items:
         items = [('1920x1080', '1080p (1920x1080)', '', 1920 * 100000 + 1080)]
     return items

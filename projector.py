@@ -162,6 +162,36 @@ class PROJECTOR_OT_save_json(bpy.types.Operator):
         return {'FINISHED'}
 
 
+_applying_resolution = False
+
+
+def apply_resolution_to_selected(context, width, height):
+    """Set 'WIDTHxHEIGHT' as the active resolution on all selected projectors - the same
+    effect as picking it from the resolution dropdown."""
+    global _applying_resolution
+    if _applying_resolution:
+        return
+    _applying_resolution = True
+    try:
+        resolution_id = f'{width}x{height}'
+        for projector in get_projectors(context, only_selected=True):
+            projector.proj_settings.resolution = resolution_id
+    finally:
+        _applying_resolution = False
+
+
+def on_resolution_size_changed(self, context):
+    """Update callback for scene.resolution_save_x/y: preview the typed size live, before
+    it's saved as a preset. Guarded against re-entry, since applying the resolution
+    triggers update_resolution(), which writes these same fields back."""
+    if _applying_resolution:
+        return
+    width = getattr(self, 'resolution_save_x', 0)
+    height = getattr(self, 'resolution_save_y', 0)
+    if width > 0 and height > 0:
+        apply_resolution_to_selected(context, width, height)
+
+
 class PROJECTOR_OT_save_resolution_json(bpy.types.Operator):
     bl_idname = "projector.save_resolution_json"
     bl_label = "Save Resolution as JSON"
@@ -178,6 +208,7 @@ class PROJECTOR_OT_save_resolution_json(bpy.types.Operator):
             self.report({'ERROR'}, "Breite und Höhe müssen größer als 0 sein.")
             return {'CANCELLED'}
         file_path = save_resolution_preset(name, width, height)
+        apply_resolution_to_selected(context, width, height)
         self.report({'INFO'}, f"Auflösung gespeichert als {os.path.basename(file_path)}.")
         return {'FINISHED'}
 

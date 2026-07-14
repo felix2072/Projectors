@@ -1,5 +1,5 @@
 from .helper import get_projectors, get_child_ID_by_type, get_child_ID_by_name
-from .projector import RESOLUTIONS, Textures
+from .projector import RESOLUTIONS, Textures, on_resolution_size_changed
 
 import bpy
 from bpy.types import Panel, PropertyGroup, UIList, Operator
@@ -178,6 +178,9 @@ class PROJECTOR_PT_projector_settings(Panel):
                 custom_box.prop(proj_settings, 'use_custom_texture_res')
                 node = get_projectors(context, only_selected=True)[0].children[get_child_ID_by_type(projector.children,'LIGHT')].data.node_tree.nodes['Image Texture']
                 custom_box.template_image(node, 'image', node.image_user, compact=False)
+                flip_row = custom_box.row(align=True)
+                flip_row.operator('projector.flip_texture_horizontal', text='Flip Horizontal')
+                flip_row.operator('projector.flip_texture_vertical', text='Flip Vertical')
 
 
 class PROJECTOR_PT_projected_color(Panel):
@@ -241,6 +244,7 @@ def register():
             description="Breite der Auflösung in Pixel",
             default=1920,
             min=1,
+            update=on_resolution_size_changed,
         )
     if not hasattr(bpy.types.Scene, 'resolution_save_y'):
         bpy.types.Scene.resolution_save_y = bpy.props.IntProperty(
@@ -248,6 +252,7 @@ def register():
             description="Höhe der Auflösung in Pixel",
             default=1080,
             min=1,
+            update=on_resolution_size_changed,
         )
 
 
